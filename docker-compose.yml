@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+    networks:
+      - dev
+    environment:
+      - NODE_ENV=${NODE_ENV}
+    env_file:
+      - .env
+    expose:
+      - "80"
+
+  backend:
+    build:
+      context: ./backend
+    networks:
+      - dev
+    expose:
+      - "5000"
+    environment:
+      - FLASK_ENV=${FLASK_ENV}
+      - DATABASE_URL=${DATABASE_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - MAIL_SERVER=${MAIL_SERVER}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_ACCOUNT=${MAIL_ACCOUNT}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - MAIL_ADMIN=${MAIL_ADMIN}
+      - FLASK_CONFIG=${FLASK_CONFIG}
+    env_file:
+      - .env
+    depends_on:
+      - db
+
+  nginx:
+    build:
+      context: ./nginx
+    networks:
+      - dev
+    ports:
+      - "80:80"
+    depends_on:
+      - frontend
+      - backend
+
+  db:
+    image: mysql:8.0
+    networks:
+      - dev
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+    env_file:
+      - .env
+    volumes:
+      - db_data:/var/lib/mysql
+
+networks:
+  dev:
+    driver: bridge
+
+volumes:
+  db_data:
