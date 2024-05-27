@@ -18,9 +18,3 @@ RUN npm run build
 
 # 安装 serve 用于提供静态文件
 RUN npm install -g serve
-
-# 暴露应用程序的端口
-EXPOSE 80
-
-# 使用 serve 提供构建后的应用程序
-CMD ["serve", "-s", "dist", "-l", "80"]

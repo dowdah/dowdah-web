@@ -4,14 +4,19 @@ services:
   frontend:
     build:
       context: ./frontend
+      dockerfile: Dockerfile.dev
     networks:
       - dev
     environment:
-      - NODE_ENV=${NODE_ENV}
+      - NODE_ENV=development
     env_file:
       - .env
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     expose:
       - "80"
+    command: npm run serve
 
   backend:
     build:
@@ -21,7 +26,7 @@ services:
     expose:
       - "5000"
     environment:
-      - FLASK_ENV=${FLASK_ENV}
+      - FLASK_ENV=development
       - DATABASE_URL=${DATABASE_URL}
       - SECRET_KEY=${SECRET_KEY}
       - MAIL_SERVER=${MAIL_SERVER}
@@ -29,9 +34,14 @@ services:
       - MAIL_ACCOUNT=${MAIL_ACCOUNT}
       - MAIL_PASSWORD=${MAIL_PASSWORD}
       - MAIL_ADMIN=${MAIL_ADMIN}
-      - FLASK_CONFIG=${FLASK_CONFIG}
+      - FLASK_CONFIG=development
+      - FLASK_APP=wsgi.py
+      - FLASK_DEBUG=1
     env_file:
       - .env
+    volumes:
+      - ./backend:/app
+    command: flask run --host=0.0.0.0 --port=5000 --reload
     depends_on:
       - db
 
