@@ -22,6 +22,8 @@ class Config:
         ['True', 'on', '1']
     MAIL_ADMIN = os.environ.get('MAIL_ADMIN', 'strangecarhead@foxmail.com')
     MAIL_SUBJECT_PREFIX = '[DOWDAH]'
+    CELERY_BROKER_URL = 'redis://redis:6379/0'
+    CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     @staticmethod
