@@ -1,5 +1,6 @@
 from flask import Blueprint, abort, current_app, jsonify
 
+
 test_bp = Blueprint('test', __name__)
 
 
