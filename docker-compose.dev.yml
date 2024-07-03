@@ -7,6 +7,7 @@ services:
       - dev
     environment:
       - NODE_ENV=development
+      - VUE_APP_TITLE=${VUE_APP_TITLE}
     env_file:
       - .env
     volumes:
@@ -19,6 +20,7 @@ services:
   backend:
     build:
       context: ./backend
+      dockerfile: Dockerfile.dev
     networks:
       - dev
     expose:
@@ -32,6 +34,7 @@ services:
       - MAIL_ACCOUNT=${MAIL_ACCOUNT}
       - MAIL_PASSWORD=${MAIL_PASSWORD}
       - MAIL_ADMIN=${MAIL_ADMIN}
+      - TZ=${SERVER_TIMEZONE}
       - FLASK_CONFIG=development
       - FLASK_APP=wsgi.py
       - FLASK_DEBUG=1
@@ -39,9 +42,9 @@ services:
       - .env
     volumes:
       - ./backend:/app
-    command: flask run --host=0.0.0.0 --port=5000 --reload
     depends_on:
       - db
+      - redis
 
   nginx:
     build:
@@ -49,7 +52,7 @@ services:
     networks:
       - dev
     ports:
-      - "80:80"
+      - "${NGINX_PORT}:80"
     depends_on:
       - frontend
       - backend
@@ -65,6 +68,13 @@ services:
       - .env
     volumes:
       - db_data:/var/lib/mysql
+
+  redis:
+    image: redis:latest
+    networks:
+      - dev
+    expose:
+      - "6379"
 
 networks:
   dev:

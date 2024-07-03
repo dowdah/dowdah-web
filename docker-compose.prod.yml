@@ -7,15 +7,18 @@ services:
       - prod
     environment:
       - NODE_ENV=production
+      - VUE_APP_TITLE=${VUE_APP_TITLE}
     env_file:
       - .env
     expose:
       - "80"
     command: serve -s dist -l 80
+    restart: always
 
   backend:
     build:
       context: ./backend
+      dockerfile: Dockerfile.prod
     networks:
       - prod
     expose:
@@ -29,12 +32,14 @@ services:
       - MAIL_ACCOUNT=${MAIL_ACCOUNT}
       - MAIL_PASSWORD=${MAIL_PASSWORD}
       - MAIL_ADMIN=${MAIL_ADMIN}
+      - TZ=${SERVER_TIMEZONE}
       - FLASK_CONFIG=production
     env_file:
       - .env
-    command: gunicorn -w 4 -b 0.0.0.0:5000 wsgi:app
     depends_on:
       - db
+      - redis
+    restart: always
 
   nginx:
     build:
@@ -42,10 +47,11 @@ services:
     networks:
       - prod
     ports:
-      - "80:80"
+      - "${NGINX_PORT}:80"
     depends_on:
       - frontend
       - backend
+    restart: always
 
   db:
     image: mysql:8.0
@@ -58,10 +64,23 @@ services:
       - .env
     volumes:
       - db_data:/var/lib/mysql
+    restart: always
+
+  redis:
+    image: redis:latest
+    networks:
+      - prod
+    restart: always
+    expose:
+      - "6379"
+    command: redis-server --ignore-warnings ARM64-COW-BUG
 
 networks:
   prod:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
 
 volumes:
   db_data:
