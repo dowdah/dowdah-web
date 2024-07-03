@@ -7,7 +7,10 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
-    "vue": "^3.0.0"
+    "vue": "^3.0.0",
+    "vue-router": "^4.0.0",
+    "vuex": "^4.0.0",
+    "axios": "^0.21.1"
   },
   "devDependencies": {
     "@vue/cli-service": "^4.5.0"
