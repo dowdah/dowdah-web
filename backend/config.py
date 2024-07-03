@@ -22,6 +22,8 @@ class Config:
         ['True', 'on', '1']
     MAIL_ADMIN = os.environ.get('MAIL_ADMIN', 'strangecarhead@foxmail.com')
     MAIL_SUBJECT_PREFIX = '[DOWDAH]'
+    API_TOKEN_EXPIRATION = os.environ.get('TOKEN_EXPIRATION', 3600)  # API token 过期时间, 默认为 1 小时
+    EMAIL_TOKEN_EXPIRATION = os.environ.get('EMAIL_TOKEN_EXPIRATION', 3600)  # 邮件 token 过期时间, 默认为 1 小时
     CELERY_BROKER_URL = 'redis://redis:6379/0'
     CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
