@@ -9,9 +9,19 @@ db = SQLAlchemy()
 mail = Mail()
 
 
+def not_found_error(e):
+    return {'success': False, 'code': 404, 'msg': 'Not found'}, 404
+
+
+def method_not_allowed_error(e):
+    return {'success': False, 'code': 405, 'msg': 'Method not allowed'}, 405
+
+
 def create_app(config_name):
     app = Flask(__name__)
     app.config.from_object(config[config_name])
+    app.register_error_handler(404, not_found_error)
+    app.register_error_handler(405, method_not_allowed_error)
     config[config_name].init_app(app)
     mail.init_app(app)
     db.init_app(app)
