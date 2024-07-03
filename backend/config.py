@@ -32,15 +32,18 @@ class Config:
 class DevelopmentConfig(Config):
     DEBUG = True
     MAIL_SENDER = f"{Config.SITE_NAME}-push-service-dev<{Config.MAIL_ACCOUNT}>"
+    DOMAIN = 'http://localhost'
 
 
 class TestingConfig(Config):
     TESTING = True
     MAIL_SENDER = f"{Config.SITE_NAME}-push-service-test<{Config.MAIL_ACCOUNT}>"
+    DOMAIN = 'http://localhost'
 
 
 class ProductionConfig(Config):
     MAIL_SENDER = f"{Config.SITE_NAME}-push-service<{Config.MAIL_ACCOUNT}>"
+    DOMAIN = 'https://dowdah.com'
 
 
 config = {
