@@ -4,6 +4,12 @@ v1_bp = Blueprint('v1', __name__)
 
 
 from . import views
+from .auth import auth_bp
+
+
+v1_bp.register_blueprint(auth_bp, url_prefix='/auth')
+
+
 @v1_bp.before_request
 def before_request():
     # 将 application/json 与 multipart/form-data 的数据统一处理
