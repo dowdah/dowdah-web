@@ -1,14 +1,10 @@
-from . import api_v1
-from flask import jsonify
-from ...models import User
+from . import v1_bp
+from flask import current_app, jsonify
+# from ...models import User
 
 
-@api_v1.route('/test', methods=['GET'])
-def test():
-    return {'status': 'success'}
-
-
-@api_v1.route('/users')
-def get_users():
-    users = User.query.all()
-    return jsonify([{'username': user.username, 'email': user.email} for user in users])
+@v1_bp.route('/task/<task_id>')
+def get_task(task_id):
+    task = current_app.celery.AsyncResult(task_id)
+    response_json = {'success': True, 'code': 200, 'task_status': task.status, 'task_result': task.result}
+    return jsonify(response_json), response_json['code']

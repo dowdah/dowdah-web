@@ -6,6 +6,7 @@ from app.models import User
 
 app = create_app(os.getenv('FLASK_CONFIG') or 'default')
 migrate = Migrate(app, db)
+celery = app.celery
 
 
 @app.shell_context_processor
