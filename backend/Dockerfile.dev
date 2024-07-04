@@ -6,7 +6,7 @@ COPY requirements/*.txt ./requirements/
 RUN apt-get update && apt-get install -y tzdata
 RUN pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --upgrade --no-cache-dir pip
 RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
-RUN pip install --no-cache-dir -r requirements/dev.txt
+RUN pip install --force-reinstall --no-cache-dir -r requirements/dev.txt
 
 COPY . .
 
