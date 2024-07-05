@@ -5,7 +5,7 @@ WORKDIR /app
 COPY requirements/*.txt ./requirements/
 RUN pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --upgrade --no-cache-dir pip
 RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
-RUN pip install --no-cache-dir -r requirements/prod.txt
+RUN pip install --force-reinstall --no-cache-dir -r requirements/prod.txt
 
 COPY . .
 

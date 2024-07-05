@@ -5,11 +5,13 @@ from config import config
 from flask_mail import Mail
 from flask_sqlalchemy import SQLAlchemy
 from celery import Celery
+from flask_jwt_extended import JWTManager
 import datetime
 
 
 db = SQLAlchemy()
 mail = Mail()
+jwt = JWTManager()
 
 
 def not_found_error(e):
@@ -49,6 +51,7 @@ def create_app(config_name):
     config[config_name].init_app(app)
     mail.init_app(app)
     db.init_app(app)
+    jwt.init_app(app)
     celery = make_celery(app)
     app.celery = celery
     from .api import api_bp as api_blueprint
@@ -56,7 +59,7 @@ def create_app(config_name):
     with app.app_context():
         # 导入模型，事件监听器和Celery任务
         from . import models
-        # from . import listeners
+        from . import listeners
         from . import celery_tasks
 
     @app.context_processor
