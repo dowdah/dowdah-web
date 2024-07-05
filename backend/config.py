@@ -1,9 +1,9 @@
 import os
-basedir = os.path.abspath(os.path.dirname(__file__))
+from datetime import timedelta
 
 
 class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'LutalliLovesGalgame'
+    SECRET_KEY = JWT_SECRET_KEY = os.environ.get('SECRET_KEY') or 'LutalliLovesGalgame'
     SITE_NAME = os.environ.get('SITE_NAME')
     MAIL_SERVER = os.environ.get('MAIL_SERVER')
     MAIL_PORT = os.environ.get('MAIL_PORT')
@@ -20,10 +20,12 @@ class Config:
         ['True', 'on', '1']
     MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'True').lower() in \
         ['True', 'on', '1']
-    MAIL_ADMIN = os.environ.get('MAIL_ADMIN', 'strangecarhead@foxmail.com')
+    MAIL_ADMIN = os.environ.get('MAIL_ADMIN', 'dowdah@qq.com')
     MAIL_SUBJECT_PREFIX = '[DOWDAH]'
     API_TOKEN_EXPIRATION = os.environ.get('TOKEN_EXPIRATION', 3600)  # API token 过期时间, 默认为 1 小时
     EMAIL_TOKEN_EXPIRATION = os.environ.get('EMAIL_TOKEN_EXPIRATION', 3600)  # 邮件 token 过期时间, 默认为 1 小时
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=15)  # 设置访问 token 有效期为 15 分钟
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)  # 设置刷新 token 有效期为 30 天
     CELERY_BROKER_URL = 'redis://redis:6379/0'
     CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -36,18 +38,21 @@ class Config:
 class DevelopmentConfig(Config):
     DEBUG = True
     MAIL_SENDER = f"{Config.SITE_NAME}-push-service-dev<{Config.MAIL_ACCOUNT}>"
-    DOMAIN = 'http://localhost'
+    USE_SSL = False
+    DOMAIN = 'localhost'
 
 
 class TestingConfig(Config):
     TESTING = True
     MAIL_SENDER = f"{Config.SITE_NAME}-push-service-test<{Config.MAIL_ACCOUNT}>"
-    DOMAIN = 'http://localhost'
+    USE_SSL = False
+    DOMAIN = 'localhost'
 
 
 class ProductionConfig(Config):
     MAIL_SENDER = f"{Config.SITE_NAME}-push-service<{Config.MAIL_ACCOUNT}>"
-    DOMAIN = 'https://dowdah.com'
+    USE_SSL = True
+    DOMAIN = 'www.dowdah.com'
 
 
 config = {
