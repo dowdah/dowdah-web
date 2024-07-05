@@ -1,10 +1,212 @@
+import datetime
+import random
+import string
+
+from flask import current_app
+from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.dialects.mysql import BLOB
+from flask_jwt_extended import create_access_token, create_refresh_token
+
+
 from . import db
 
 
-class User(db.Model):
+OUTPUT_TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
+
+
+class Role(db.Model):
+    __tablename__ = 'roles'
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
+    name = db.Column(db.String(64), unique=True)
+    default = db.Column(db.Boolean, default=False, index=True)
+    permissions = db.Column(db.Integer, default=0)
+    users = db.relationship('User', backref='role', lazy='dynamic', cascade='all, delete-orphan')
 
     def __repr__(self):
-        return f'<User {self.username}>'
+        return '<Role %r>' % self.name
+
+    def add_permission(self, perm):
+        if not self.has_permission(perm):
+            self.permissions += perm
+
+    def remove_permission(self, perm):
+        if self.has_permission(perm):
+            self.permissions -= perm
+
+    def reset_permissions(self):
+        self.permissions = 0
+
+    def has_permission(self, perm):
+        if self.permissions & Permission.ADMIN == Permission.ADMIN:
+            return True
+        else:
+            return self.permissions & perm == perm
+
+    def to_json(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'default': self.default,
+            'permissions': self.permissions
+        }
+
+    @staticmethod
+    def insert_roles():
+        roles = {
+            'User': [
+                Permission.LOGIN,
+                Permission.SELF_CHANGE_PASSWORD,
+                Permission.SELF_CHANGE_EMAIL
+            ],
+            'Administrator': [
+                Permission.ADMIN
+            ]
+        }
+        default_role = 'User'
+        for r in roles:
+            role = Role.query.filter_by(name=r).first()
+            if role is None:
+                role = Role(name=r)
+            role.reset_permissions()
+            for perm in roles[r]:
+                role.add_permission(perm)
+            role.default = (role.name == default_role)
+            db.session.add(role)
+        db.session.commit()
+
+
+class Permission:
+    LOGIN = 1  # 登录权限
+    SELF_CHANGE_PASSWORD = 2  # 自己修改密码
+    SELF_CHANGE_EMAIL = 4  # 自己修改邮箱
+    VIEW_USER_INFO = 8  # 查看用户信息
+    MODIFY_USER_INFO = 16  # 修改用户信息
+    DEL_USER = 32  # 删除用户
+    MANAGE_PERMISSIONS = 64  # 调整角色权限
+    BACKUP_DATA = 128  # 备份数据
+    RESTORE_DATA = 256  # 恢复数据
+    ADD_USER = 512  # 添加用户
+    ADMIN = 1024  # 最高权限
+
+    @staticmethod
+    def to_json():
+        d = dict()
+        for k, v in Permission.__dict__.items():
+            if not k.startswith('__') and not callable(v) and isinstance(v, int):
+                d[k] = v
+        return d
+
+
+class User(db.Model):
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    alternative_id = db.Column(db.String(64), unique=True, index=True)  # 用户的替代ID，用于生成token，初始化时自动生成
+    username = db.Column(db.String(64), unique=True, index=True, nullable=False)  # 用户名
+    email = db.Column(db.String(64), unique=True, index=True, nullable=False)  # 邮箱，用于二步验证
+    created_at = db.Column(db.DateTime, default=datetime.datetime.now)  # 创建时间
+    last_seen = db.Column(db.DateTime, default=datetime.datetime.now)  # 最后一次出现时间
+    password_hash = db.Column(db.String(128))  # 密码哈希值
+    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))  # 用户的身份
+    confirmed = db.Column(db.Boolean, default=False)  # 是否已经通过邮箱验证
+    comments = db.Column(db.Text, nullable=True, default='')  # 备注(管理员添加)
+    webauthn_credentials = db.relationship('WebAuthnCredential', backref='user', lazy=True)
+
+    def __repr__(self):
+        return '<User %s>' % self.username
+
+    def ping(self):
+        self.last_seen = datetime.datetime.now()
+        db.session.add(self)
+        db.session.commit()
+
+    @property
+    def formatted_created_at(self):
+        return self.created_at.strftime(OUTPUT_TIME_FORMAT)
+
+    @property
+    def formatted_last_seen(self):
+        return self.last_seen.strftime(OUTPUT_TIME_FORMAT)
+
+    @property
+    def password(self):
+        raise AttributeError('Password is not a readable attribute.')
+
+    @password.setter
+    def password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def verify_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+    def confirm(self, token):
+        if self.validate_token(token):
+            self.confirmed = True
+            db.session.add(self)
+            db.session.commit()
+            return True
+        else:
+            return False
+
+    def can(self, perm):
+        return self.role is not None and self.role.has_permission(perm)
+
+    def generate_access_token(self, expires_in=None):
+        if expires_in is None:
+            expires_in = current_app.config['JWT_ACCESS_TOKEN_EXPIRES']
+        return create_access_token(identity=self.alternative_id, expires_delta=expires_in)
+
+    def generate_refresh_token(self, expires_in=None):
+        if expires_in is None:
+            expires_in = current_app.config['JWT_REFRESH_TOKEN_EXPIRES']
+        return create_refresh_token(identity=self.alternative_id, expires_delta=expires_in)
+
+    @staticmethod
+    def generate_alternative_id(length=12):
+        alternative_id = ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+        while User.query.filter_by(alternative_id=alternative_id).first() is not None:
+            alternative_id = ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+        return alternative_id
+
+    def to_json(self, include_sensitive=False, include_related=True):
+        user_json = {
+            'username': self.username,
+            'created_at': self.formatted_created_at,
+            'last_seen': self.formatted_last_seen,
+            'id': self.id,
+            'email': self.email,
+            'role': self.role.to_json(),
+            'confirmed': self.confirmed
+        }
+        if include_related:
+            related_json = {}
+            user_json.update(related_json)
+        if include_sensitive:
+            sensitive_json = {
+                'comments': self.comments,
+            }
+            user_json.update(sensitive_json)
+        return user_json
+
+
+class WebAuthnCredential(db.Model):
+    __tablename__ = 'webauthn_credentials'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    name = db.Column(db.String(255), nullable=False)
+    credential_id = db.Column(db.String(255), unique=True, nullable=False)  # in Base64url format
+    public_key = db.Column(BLOB, nullable=False)
+    sign_count = db.Column(db.Integer, nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False)
+
+    @property
+    def formatted_created_at(self):
+        return self.created_at.strftime(OUTPUT_TIME_FORMAT)
+
+    def to_json(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'credential_id': self.credential_id,
+            'created_at': self.formatted_created_at
+        }
