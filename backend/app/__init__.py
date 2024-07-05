@@ -56,7 +56,7 @@ def create_app(config_name):
     with app.app_context():
         # 导入模型，事件监听器和Celery任务
         from . import models
-        # from . import listeners
+        from . import listeners
         from . import celery_tasks
 
     @app.context_processor
