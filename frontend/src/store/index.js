@@ -7,7 +7,8 @@ const store = createStore({
         user: null,
         isLoading: false,
         permissions: null,
-        isInitialized: false
+        isInitialized: false,
+        topBarTitle: null
     },
     mutations: {
         setUser(state, user) {
@@ -24,6 +25,9 @@ const store = createStore({
         },
         setInitialized(state, isInitialized) {
             state.isInitialized = isInitialized;
+        },
+        setTopBarTitle(state, title) {
+            state.topBarTitle = title;
         }
     },
     actions: {

@@ -1,14 +1,21 @@
 <template>
   <div id="app">
-    <h3>{{ title }}</h3>
-    <router-view></router-view>
+    <div class="layout-container">
+      <NavBar/>
+      <TopBar/>
+      <div class="layout-main">
+        <router-view></router-view>
+      </div>
+    </div>
     <LoadingSpinner/>
   </div>
 </template>
 
 <script>
 import {mapGetters, mapState} from 'vuex';
-import LoadingSpinner from '@/components/LoadingSpinner.vue';
+import LoadingSpinner from "./components/LoadingSpinner.vue";
+import NavBar from "./components/NavBar.vue";
+import TopBar from "./components/TopBar.vue";
 
 export default {
   name: 'App',
@@ -18,6 +25,8 @@ export default {
     };
   },
   components: {
+    TopBar,
+    NavBar,
     LoadingSpinner
   },
   computed: {
@@ -31,14 +40,39 @@ export default {
 </script>
 
 <style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
+body {
+  font-family: open sans, Helvetica, Arial, sans-serif;
+  color: #000;
 }
+
+#app {
+  position: relative;
+  z-index: 2;
+}
+
+.layout-container {
+  background-color: #fafafa;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.layout-container .layout-main {
+  position: absolute;
+  left: 260px;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  overflow: auto;
+  padding: 80px 20px 0;
+}
+
+.use-shadow {
+  border-radius: 6px;
+  background-color: #fff;
+  box-shadow: 0 0 16px 0 rgba(0, 0, 0, .04);
+}
+
+/* 自定义滚动条样式 */
 
 ::-webkit-scrollbar {
   height: 8px; /* 设置滚动条的高度 */
