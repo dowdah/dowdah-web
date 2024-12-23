@@ -19,11 +19,6 @@ import TopBar from "./components/TopBar.vue";
 
 export default {
   name: 'App',
-  data() {
-    return {
-      title: process.env.VUE_APP_TITLE
-    };
-  },
   components: {
     TopBar,
     NavBar,
@@ -31,7 +26,7 @@ export default {
   },
   computed: {
     ...mapGetters(['isAuthenticated']),
-    ...mapState(['user']),
+    ...mapState(['user', 'title']),
     unconfirmed() {
       return this.isAuthenticated && !this.user.confirmed;
     }

@@ -8,7 +8,8 @@ const store = createStore({
         isLoading: false,
         permissions: null,
         isInitialized: false,
-        topBarTitle: null
+        topBarTitle: null,
+        title: process.env.VUE_APP_TITLE
     },
     mutations: {
         setUser(state, user) {
