@@ -9,7 +9,8 @@ const store = createStore({
         permissions: null,
         isInitialized: false,
         topBarTitle: null,
-        title: process.env.VUE_APP_TITLE
+        title: process.env.VUE_APP_TITLE,
+        theme: window.matchMedia('(prefers-color-scheme: light)').matches ? "light":"dark"
     },
     mutations: {
         setUser(state, user) {
@@ -29,6 +30,12 @@ const store = createStore({
         },
         setTopBarTitle(state, title) {
             state.topBarTitle = title;
+        },
+        changeTheme(state) {
+            state.theme = state.theme==='light' ? 'dark' : 'light';
+        },
+        setTheme(state, theme) {
+            state.theme = theme;
         }
     },
     actions: {

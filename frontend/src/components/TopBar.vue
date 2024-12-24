@@ -1,20 +1,23 @@
 <template>
-  <div class="layout-topbar">
-    <div class="topbar-collapse">
-<!--      <div class="svg-icon">-->
-<!--        <img-->
-<!--            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAC4AAAAuCAYAAABXuSs3AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAChSURBVHgB7dixDQIxDIVhh7sBoL0UMAKMwihMBhuwAmxwTXrooiRSMO0RJAoiufi/xpLl4pXWEwEAAL9zraX3fu+cW4sB4zjObx/71rGGvtZaTQTPOT90bJb7ZvBSykHHVgwYhuEpAABY0fxVpmk6W/lV1C2EcFouV61LDT2LEZplJwAAWNG1nvhWLfxD13oipXTRcZQOutYTMca7AAAAA161FyrWuNUI0AAAAABJRU5ErkJggg==">-->
-<!--      </div>-->
-      <MenuOutlined />
+  <a-flex verticle="true" justify="space-between" align="middle">
+    <a-flex verticle="true" align="center">
+      <menu-unfold-outlined
+          v-if="collapsed"
+          @click="$emit('toggle-collapse')"
+          class="trigger"
+      />
+      <menu-fold-outlined v-else class="trigger" @click="$emit('toggle-collapse')"/>
       <div class="title">{{ $store.state.topBarTitle }}</div>
-    </div>
-    <div class="corner-bar">
+    </a-flex>
+    <a-flex verticle="true" align="center" class="corner-bar">
       <div class="item">
         <a-dropdown placement="bottomRight" arrow v-if="user">
-          <a-button class="rightbar">
-            <span class="avatar">{{ avatar }}</span>
-            <span class="name">{{ user.username }}</span>
-          </a-button>
+          <template #default>
+            <a-button class="rightbar">
+              <a-avatar>{{ avatar }}</a-avatar>
+              <span class="name">{{ user.username }}</span>
+            </a-button>
+          </template>
           <template #overlay>
             <a-menu>
               <a-menu-item>
@@ -27,10 +30,12 @@
           </template>
         </a-dropdown>
         <a-dropdown placement="bottomRight" arrow v-else>
-          <a-button class="rightbar">
-            <span class="avatar">N</span>
-            <span class="name">未登录</span>
-          </a-button>
+          <template #default>
+            <a-button class="rightbar">
+              <a-avatar>N</a-avatar>
+              <span class="name">未登录</span>
+            </a-button>
+          </template>
           <template #overlay>
             <a-menu>
               <a-menu-item>
@@ -43,76 +48,55 @@
           </template>
         </a-dropdown>
       </div>
-    </div>
-  </div>
+    </a-flex>
+  </a-flex>
 </template>
 
 <script>
+import {MenuFoldOutlined, MenuUnfoldOutlined} from '@ant-design/icons-vue';
 import {mapState} from 'vuex';
 
 export default {
   name: 'TopBar',
+  props: ['collapsed'],
+  emits: ['toggle-collapse'],
+  components: {
+    MenuFoldOutlined,
+    MenuUnfoldOutlined
+  },
   computed: {
     ...mapState(['user']),
     avatar() {
-      return this.user.username[0].toUpperCase();
-    }
-  }
+      return this.user && this.user.username ? this.user.username[0].toUpperCase() : '';
+    },
+  },
 };
 </script>
 
-<style>
-.layout-topbar {
-  position: absolute;
-  left: 260px;
-  height: 80px;
-  top: 0;
-  right: 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 20px 0 10px;
-  background-color: hsla(0, 0%, 98%, .8);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  backdrop-filter: saturate(180%) blur(20px);
-  z-index: 5;
+<style scoped>
+.trigger {
+  font-size: 18px;
+  line-height: 64px;
+  cursor: pointer;
+  transition: color 0.3s;
 }
 
-.topbar-collapse {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
+.trigger:hover {
+  color: #1890ff;
 }
 
-.topbar-collapse .title {
+.title {
   font-size: 24px;
   margin-left: 20px;
 }
 
 .corner-bar {
-  display: flex;
-  align-items: center;
   margin-right: -8px;
 }
 
 .corner-bar .item {
   cursor: pointer;
   margin: 0 8px;
-}
-
-.corner-bar .avatar {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-weight: 700;
-  font-size: 16px;
-  color: #bc3aaf;
-  line-height: 1;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background-color: #fff;
-  filter: drop-shadow(0 0 4px rgba(0, 0, 0, .08));
 }
 
 .corner-bar .name {
@@ -128,9 +112,8 @@ export default {
   display: flex;
   flex-direction: row;
   align-items: center;
-  padding: 4px;
+  padding: 20px 10px;
   border-radius: 30px;
-  background-color: #f2f2f2;
-  box-shadow: inset 0 0 5px 0 rgba(0, 0, 0, .05);
+  box-shadow: inset 0 0 5px 0 rgba(0, 0, 0, 0.05);
 }
 </style>

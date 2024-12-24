@@ -1,18 +1,39 @@
 <template>
-  <div id="app">
-    <div class="layout-container">
+   <a-config-provider :theme="currentTheme">
+  <a-layout style="min-height: 100vh" has-sider>
+    <a-layout-sider v-model:collapsed="collapsed" :trigger="null" collapsible
+                    :style="{ overflow: 'auto', height: '100vh', position: 'fixed', left: 0, top: 0, bottom: 0 ,
+                    backgroundColor: theme === 'dark' ? '#141414' : '#fff' }">
+      <div class="logo"><a-avatar src="/favicon.ico" /><span :style="{ position: 'fixed', top: '20px', left: '52px',
+      display: collapsed ? 'none':'inline-block', fontSize: '20px', fontWeight: 'bold'}">Dowdah</span></div>
       <NavBar/>
-      <TopBar/>
-      <div class="layout-main">
+    </a-layout-sider>
+    <a-layout :style="{ marginLeft: leftMargin, transition: 'margin-left 0.2s' }">
+      <a-layout-header :style="{ paddingInline: '20px', backgroundColor: theme === 'dark' ? '#141414' : '#fff'}">
+        <TopBar @toggle-collapse="collapsed = !collapsed" :collapsed="collapsed"/>
+      </a-layout-header>
+      <a-layout-content :style="{ margin: '24px 16px 0', overflow: 'initial' }">
         <router-view></router-view>
-      </div>
-    </div>
+      </a-layout-content>
+      <a-layout-footer style="text-align: center">
+        Dowdah ©2025 Created by 🦌🦌🦌
+      </a-layout-footer>
+    </a-layout>
+  </a-layout>
     <LoadingSpinner/>
-  </div>
+  </a-config-provider>
 </template>
 
 <script>
+import { theme } from 'ant-design-vue';
 import {mapGetters, mapState} from 'vuex';
+import {
+  UserOutlined,
+  VideoCameraOutlined,
+  UploadOutlined,
+  MenuUnfoldOutlined,
+  MenuFoldOutlined,
+} from '@ant-design/icons-vue';
 import LoadingSpinner from "./components/LoadingSpinner.vue";
 import NavBar from "./components/NavBar.vue";
 import TopBar from "./components/TopBar.vue";
@@ -22,13 +43,31 @@ export default {
   components: {
     TopBar,
     NavBar,
-    LoadingSpinner
+    LoadingSpinner,
+    MenuUnfoldOutlined,
+    MenuFoldOutlined,
+    UserOutlined,
+    VideoCameraOutlined,
+    UploadOutlined
+  },
+  data() {
+    return {
+      collapsed: false
+    };
   },
   computed: {
     ...mapGetters(['isAuthenticated']),
-    ...mapState(['user', 'title']),
+    ...mapState(['user', 'title', 'theme']),
     unconfirmed() {
       return this.isAuthenticated && !this.user.confirmed;
+    },
+    currentTheme() {
+      return {
+        algorithm: this.theme === 'light' ? theme.defaultAlgorithm : theme.darkAlgorithm
+      }
+    },
+    leftMargin() {
+      return this.collapsed ? '80px' : '200px';
     }
   }
 };
@@ -40,31 +79,22 @@ body {
   color: #000;
 }
 
-#app {
-  position: relative;
-  z-index: 2;
-}
-
-.layout-container {
-  background-color: #fafafa;
-  height: 100vh;
-  overflow: hidden;
-}
-
-.layout-container .layout-main {
-  position: absolute;
-  left: 260px;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  overflow: auto;
-  padding: 80px 20px 0;
-}
-
 .use-shadow {
   border-radius: 6px;
   background-color: #fff;
   box-shadow: 0 0 16px 0 rgba(0, 0, 0, .04);
+}
+
+html, body, #app {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.logo {
+  height: 32px;
+  margin: 16px;
 }
 
 /* 自定义滚动条样式 */
