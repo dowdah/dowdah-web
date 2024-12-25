@@ -1,6 +1,5 @@
 <template>
 <!--  <Dashboard v-if="isAuthenticated"></Dashboard>-->
-<!--  <Login v-else></Login>-->
   <p>...
           <br />
           Really
@@ -100,12 +99,11 @@
 
 <script>
 import Dashboard from '../components/Dashboard.vue';
-import Login from '../components/Login.vue';
 import {mapGetters} from 'vuex';
 
 export default {
   name: 'Home',
-  components: {Dashboard, Login},
+  components: {Dashboard},
   computed: {
     ...mapGetters(['isAuthenticated'])
   }
