@@ -1,63 +1,59 @@
 <template>
    <a-config-provider :theme="currentTheme">
+     <a-spin :spinning='isLoading' :delay="500" tip="加载中..." size="large" :indicator="loadingIndicator">
   <a-layout style="min-height: 100vh" has-sider>
     <a-layout-sider v-model:collapsed="collapsed" :trigger="null" collapsible
                     :style="{ overflow: 'auto', height: '100vh', position: 'fixed', left: 0, top: 0, bottom: 0 ,
                     backgroundColor: theme === 'dark' ? '#141414' : '#fff' }">
       <div class="logo"><a-avatar src="/favicon.ico" /><span :style="{ position: 'fixed', top: '20px', left: '52px',
-      display: collapsed ? 'none':'inline-block', fontSize: '20px', fontWeight: 'bold'}">Dowdah</span></div>
+      display: collapsed ? 'none':'inline-block', fontSize: '20px', fontWeight: 'bold'}">{{ title }}</span></div>
       <NavBar/>
     </a-layout-sider>
     <a-layout :style="{ marginLeft: leftMargin, transition: 'margin-left 0.2s' }">
       <a-layout-header :style="{ paddingInline: '20px', backgroundColor: theme === 'dark' ? '#141414' : '#fff'}">
-        <TopBar @toggle-collapse="collapsed = !collapsed" :collapsed="collapsed"/>
+        <TopBar @toggle-collapse="collapsed = !collapsed" :collapsed="collapsed"
+        @show-login-modal="showLoginModal = true"/>
       </a-layout-header>
       <a-layout-content :style="{ margin: '24px 16px 0', overflow: 'initial' }">
         <router-view></router-view>
       </a-layout-content>
       <a-layout-footer style="text-align: center">
-        Dowdah ©2025 Created by 🦌🦌🦌
+        {{ title }} ©{{ currentYear }} Created by 练习时长两年半的个人练习生
       </a-layout-footer>
     </a-layout>
   </a-layout>
-    <LoadingSpinner/>
+  <LoginModal v-model:mOpen="showLoginModal"/>
+  </a-spin>
   </a-config-provider>
 </template>
 
 <script>
 import { theme } from 'ant-design-vue';
 import {mapGetters, mapState} from 'vuex';
-import {
-  UserOutlined,
-  VideoCameraOutlined,
-  UploadOutlined,
-  MenuUnfoldOutlined,
-  MenuFoldOutlined,
-} from '@ant-design/icons-vue';
-import LoadingSpinner from "./components/LoadingSpinner.vue";
+import { LoadingOutlined } from '@ant-design/icons-vue';
+import { h } from 'vue';
 import NavBar from "./components/NavBar.vue";
 import TopBar from "./components/TopBar.vue";
+import LoginModal from "./components/LoginModal.vue";
+import dayjs from 'dayjs';
 
 export default {
   name: 'App',
   components: {
     TopBar,
     NavBar,
-    LoadingSpinner,
-    MenuUnfoldOutlined,
-    MenuFoldOutlined,
-    UserOutlined,
-    VideoCameraOutlined,
-    UploadOutlined
+    LoginModal
   },
   data() {
     return {
-      collapsed: false
+      collapsed: false,
+      showLoginModal: false,
+      loadingIndicator: h(LoadingOutlined, {style: {fontSize: '30px'}})
     };
   },
   computed: {
     ...mapGetters(['isAuthenticated']),
-    ...mapState(['user', 'title', 'theme']),
+    ...mapState(['user', 'title', 'theme', 'isLoading']),
     unconfirmed() {
       return this.isAuthenticated && !this.user.confirmed;
     },
@@ -68,6 +64,9 @@ export default {
     },
     leftMargin() {
       return this.collapsed ? '80px' : '200px';
+    },
+    currentYear() {
+      return dayjs().format('YYYY');
     }
   }
 };

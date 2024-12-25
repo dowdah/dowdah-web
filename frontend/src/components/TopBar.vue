@@ -7,69 +7,79 @@
           class="trigger"
       />
       <menu-fold-outlined v-else class="trigger" @click="$emit('toggle-collapse')"/>
-      <div class="title">{{ $store.state.topBarTitle }}</div>
+      <div class="title">{{ topBarTitle }}</div>
     </a-flex>
     <a-flex verticle="true" align="center" class="corner-bar">
-      <div class="item">
-        <a-dropdown placement="bottomRight" arrow v-if="user">
-          <template #default>
-            <a-button class="rightbar">
-              <a-avatar>{{ avatar }}</a-avatar>
-              <span class="name">{{ user.username }}</span>
-            </a-button>
-          </template>
-          <template #overlay>
-            <a-menu>
-              <a-menu-item>
-                <a href="javascript:;">个人中心</a>
-              </a-menu-item>
-              <a-menu-item>
-                <a href="javascript:;">退出登录</a>
-              </a-menu-item>
-            </a-menu>
-          </template>
-        </a-dropdown>
-        <a-dropdown placement="bottomRight" arrow v-else>
-          <template #default>
-            <a-button class="rightbar">
-              <a-avatar>N</a-avatar>
-              <span class="name">未登录</span>
-            </a-button>
-          </template>
-          <template #overlay>
-            <a-menu>
-              <a-menu-item>
-                <a href="javascript:;">登录</a>
-              </a-menu-item>
-              <a-menu-item>
-                <a href="javascript:;">注册</a>
-              </a-menu-item>
-            </a-menu>
-          </template>
-        </a-dropdown>
-      </div>
+      <a-dropdown placement="bottomRight" arrow v-if="user">
+        <template #default>
+          <a-button class="rightbar">
+            <a-avatar>{{ avatar }}</a-avatar>
+            <span class="name">{{ user.username }}</span>
+          </a-button>
+        </template>
+        <template #overlay>
+          <a-menu>
+            <a-menu-item>
+              <router-link to="/dashboard">个人中心</router-link>
+            </a-menu-item>
+            <a-menu-item>
+              <a @click="logoutHandler">登出</a>
+            </a-menu-item>
+          </a-menu>
+        </template>
+      </a-dropdown>
+      <a-dropdown placement="bottomRight" arrow v-else>
+        <template #default>
+          <a-button class="rightbar">
+            <a-avatar>N</a-avatar>
+            <span class="name">未登录</span>
+          </a-button>
+        </template>
+        <template #overlay>
+          <a-menu>
+            <a-menu-item @click="$emit('show-login-modal')">
+              登录
+            </a-menu-item>
+            <a-menu-item disabled>
+              <a href="javascript:;">注册</a>
+            </a-menu-item>
+          </a-menu>
+        </template>
+      </a-dropdown>
     </a-flex>
   </a-flex>
 </template>
 
 <script>
 import {MenuFoldOutlined, MenuUnfoldOutlined} from '@ant-design/icons-vue';
-import {mapState} from 'vuex';
+import {mapState, mapActions} from 'vuex';
 
 export default {
   name: 'TopBar',
   props: ['collapsed'],
-  emits: ['toggle-collapse'],
+  emits: ['toggle-collapse', 'show-login-modal'],
   components: {
     MenuFoldOutlined,
     MenuUnfoldOutlined
   },
   computed: {
-    ...mapState(['user']),
+    ...mapState(['user', 'title', 'topBarTitle']),
     avatar() {
       return this.user && this.user.username ? this.user.username[0].toUpperCase() : '';
     },
   },
+  methods: {
+    ...mapActions(['logout']),
+    async logoutHandler() {
+      const route = this.$route
+      const requiresAuth = route.meta && route.meta.requiresAuth;
+      await this.logout();
+      if (requiresAuth || route.meta.requiresPermission !== undefined) {
+        this.$router.push('/');
+      }
+      this.$message.success('登出成功');
+    }
+  }
 };
 </script>
 
@@ -94,11 +104,6 @@ export default {
   margin-right: -8px;
 }
 
-.corner-bar .item {
-  cursor: pointer;
-  margin: 0 8px;
-}
-
 .corner-bar .name {
   font-weight: 700;
   font-size: 16px;
@@ -115,5 +120,6 @@ export default {
   padding: 20px 10px;
   border-radius: 30px;
   box-shadow: inset 0 0 5px 0 rgba(0, 0, 0, 0.05);
+  cursor: default;
 }
 </style>
