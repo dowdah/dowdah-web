@@ -1,5 +1,6 @@
 import {createStore} from 'vuex';
 import {BASE_API_URL} from '@/config/constants';
+import {SITE_NAME} from "@/config/constants";
 import axios from 'axios';
 
 const store = createStore({
@@ -9,7 +10,7 @@ const store = createStore({
         permissions: null,
         isInitialized: false,
         topBarTitle: null,
-        title: process.env.VUE_APP_TITLE,
+        title: SITE_NAME,
         theme: window.matchMedia('(prefers-color-scheme: light)').matches ? "light":"dark"
     },
     mutations: {
