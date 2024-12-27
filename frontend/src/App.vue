@@ -18,7 +18,7 @@
         <router-view></router-view>
       </a-layout-content>
       <a-layout-footer style="text-align: center">
-        {{ title }} ©{{ currentYear }} Created by 练习时长两年半的个人练习生
+        {{ title }} ©{{ currentYear }} Created by 练习时长两年半的个人练习生 测试版本不代表最终品质
       </a-layout-footer>
     </a-layout>
   </a-layout>
