@@ -20,7 +20,7 @@
         <template #overlay>
           <a-menu>
             <a-menu-item>
-              <router-link to="/dashboard">个人中心</router-link>
+              <router-link to="/my">个人中心</router-link>
             </a-menu-item>
             <a-menu-item>
               <a @click="logoutHandler">登出</a>
