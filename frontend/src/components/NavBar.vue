@@ -32,6 +32,7 @@ export default {
         const groupName = route.meta && route.meta.groupName;
         const hidden = route.meta && route.meta.notShownInMenu;
         const requiresAuth = route.meta && route.meta.requiresAuth;
+        const blockedForAuthenticated = route.meta && route.meta.blockedForAuthenticated;
         const permissions = route.meta.requiresPermission;
         let hasPermission = true;
         if (permissions) {
@@ -42,7 +43,8 @@ export default {
           }
         }
         // console.log(route.name, requiresAuth, hasPermission);
-        if (!(hidden || (requiresAuth && !this.isAuthenticated) || !hasPermission)) {
+        if (!(hidden || (requiresAuth && !this.isAuthenticated) || !hasPermission ||
+            (blockedForAuthenticated && this.isAuthenticated))) {
           if (groupName) {
             if (!groups[groupName]) {
               groups[groupName] = [];

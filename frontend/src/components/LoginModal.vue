@@ -122,6 +122,8 @@ export default {
     ...mapActions(['login', 'webauthnLoginComplete']),
     async handleOk() {
       this.loading = true;
+      const route = this.$route;
+      const blockedForAuthenticated = route.meta && route.meta.blockedForAuthenticated;
       if (this.formState.loginMethod === 'passkey') {
         await this.handleWebAuthnLogin();
       } else {
@@ -136,6 +138,9 @@ export default {
       if (this.isAuthenticated) {
         this.open = false;
         this.$message.success('登录成功');
+        if (blockedForAuthenticated) {
+          this.$router.push('/');
+        }
       } else {
         this.$message.error(this.failed_response_data.msg);
       }
