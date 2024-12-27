@@ -16,7 +16,15 @@
         <a-radio-group v-model:value="formState.loginMethod">
           <a-radio-button value="username">用户名</a-radio-button>
           <a-radio-button value="email">邮箱</a-radio-button>
-          <a-radio-button value="passkey">Passkey(推荐)</a-radio-button>
+          <a-radio-button value="passkey" :disabled="passkeyDisabled">
+            通行密钥
+            <a-tooltip title="您的设备不支持 WebAuthn，无法使用通行密钥登录" v-if="passkeyDisabled">
+              <QuestionCircleOutlined />
+            </a-tooltip>
+            <a-tooltip title="使用通行密钥登录，免去使用键盘的烦恼！" v-else>
+              <QuestionCircleOutlined />
+            </a-tooltip>
+          </a-radio-button>
         </a-radio-group>
       </a-form-item>
       <a-form-item
@@ -57,7 +65,7 @@
       </a-form-item>
 
       <a-form-item v-if="formState.loginMethod === 'passkey'">
-        <p>您已选择使用 Passkey 登录，直接点击“登录”按钮即可。注意，您必须已经注册 Passkey 才能够使用其登录。</p>
+        <p>您已选择使用通行密钥登录，直接点击“登录”按钮即可。注意，您必须已经注册 WebAuthn 才能够使用其登录。</p>
       </a-form-item>
 
       <a-form-item v-if="failed_response_data.code === 401">
@@ -69,7 +77,7 @@
 </template>
 
 <script>
-import {UserOutlined, LockOutlined, MailOutlined} from '@ant-design/icons-vue';
+import {UserOutlined, LockOutlined, MailOutlined, QuestionCircleOutlined} from '@ant-design/icons-vue';
 import {mapActions, mapGetters} from 'vuex';
 import axios from 'axios';
 import {BASE_API_URL} from '@/config/constants';
@@ -81,7 +89,8 @@ export default {
   components: {
     UserOutlined,
     LockOutlined,
-    MailOutlined
+    MailOutlined,
+    QuestionCircleOutlined
   },
   data() {
     return {
@@ -105,7 +114,8 @@ export default {
         password: [
           {validator: this.validatePassword, trigger: 'blur'}
         ]
-      }
+      },
+      passkeyDisabled: false
     };
   },
   methods: {
@@ -202,7 +212,20 @@ export default {
         } catch (error) {
           console.error('WebAuthn login error:', error);
           this.failed_login = true;
-          this.failed_response_data = error.response.data;
+          if (error.response) {
+            this.failed_response_data = error.response.data;
+          } else {
+            switch (error.name) {
+              case 'NotAllowedError':
+                this.failed_response_data = {msg: '您拒绝了登录请求'};
+                break;
+              case 'InvalidStateError':
+                this.failed_response_data = {msg: '登录请求已过期，请重试'};
+                break;
+              default:
+                this.failed_response_data = {msg: '未知错误'};
+            }
+          }
         }
       }
     },
@@ -232,7 +255,7 @@ export default {
           return !/^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/.test(this.formState.email)
               || !this.formState.password;
         case 'passkey':
-          return false;
+          return this.passkeyDisabled
       }
     },
     credentials() {
@@ -245,6 +268,11 @@ export default {
     'formState.loginMethod'(value) {
       this.failed_login = false;
       this.failed_response_data = {};
+    }
+  },
+  created() {
+    if (!window.PublicKeyCredential) {
+      this.passkeyDisabled = true;
     }
   }
 };
