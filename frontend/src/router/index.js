@@ -1,13 +1,15 @@
 import {createRouter, createWebHistory} from 'vue-router';
 import {h} from 'vue';
-import {AppstoreOutlined, SettingOutlined, HomeOutlined} from '@ant-design/icons-vue';
+import {AppstoreOutlined, SettingOutlined, HomeOutlined, UserOutlined} from '@ant-design/icons-vue';
 import store from '../store';
 import Home from '../views/Home.vue';
 import NotFound from "../views/NotFound.vue";
 import PermissionDenied from "../views/PermissionDenied.vue";
+import My from "../views/My.vue";
 
 const routes = [
     {path: '/', name: '主页', component: Home, meta: {icon: h(HomeOutlined)}},
+    {path: '/my', name: '个人中心', component: My, meta: {icon: h(UserOutlined), requiresAuth: true}},
     {path: '/test1', name: '测试1', component: Home, meta: {groupName: "测试组1", icon: h(SettingOutlined)}},
     {path: '/test2', name: '测试2', component: Home, meta: {groupName: "测试组1", requiresPermission: ['LOGIN']}},
     {path: '/test3', name: '测试3', component: Home, meta: {groupName: "测试组2", icon: h(AppstoreOutlined)}},
