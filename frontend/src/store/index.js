@@ -1,5 +1,6 @@
 import {createStore} from 'vuex';
 import {BASE_API_URL} from '@/config/constants';
+import {SITE_NAME} from "@/config/constants";
 import axios from 'axios';
 
 const store = createStore({
@@ -7,7 +8,10 @@ const store = createStore({
         user: null,
         isLoading: false,
         permissions: null,
-        isInitialized: false
+        isInitialized: false,
+        topBarTitle: null,
+        title: SITE_NAME,
+        theme: window.matchMedia('(prefers-color-scheme: light)').matches ? "light":"dark"
     },
     mutations: {
         setUser(state, user) {
@@ -24,6 +28,15 @@ const store = createStore({
         },
         setInitialized(state, isInitialized) {
             state.isInitialized = isInitialized;
+        },
+        setTopBarTitle(state, title) {
+            state.topBarTitle = title;
+        },
+        changeTheme(state) {
+            state.theme = state.theme==='light' ? 'dark' : 'light';
+        },
+        setTheme(state, theme) {
+            state.theme = theme;
         }
     },
     actions: {
@@ -42,7 +55,9 @@ const store = createStore({
                         await store.dispatch('fetchPermissions');
                     }
                 } else {
-                    alert('登录失败：' + response.data.msg)
+                    // alert('登录失败：' + response.data.msg)
+                    console.error('Login failed:', response.data.msg);
+                    throw new Error('Login failed: ' + response.data.msg);
                 }
             } catch (error) {
                 console.error('Login error:', error);
@@ -58,12 +73,7 @@ const store = createStore({
             commit('clearUser');
         },
         async init({commit, state}) {
-            // 当加载时间超过 500ms 时，显式加载。
-            let setLoadingCalled = false;
-            const timer = setTimeout(() => {
-                setLoadingCalled = true;
-                commit('setLoading', true);
-            }, 500);
+            commit('setLoading', true);
             const access_token = localStorage.getItem('access_token');
             console.log('Init action called with token:', access_token)
             if (access_token) {
@@ -90,12 +100,7 @@ const store = createStore({
                     }
                 }
             }
-            // 如果加载时间未超过 500ms，取消计时器。若计时器已触发，取消加载状态。
-            if (!setLoadingCalled) {
-                clearTimeout(timer);
-            } else {
-                commit('setLoading', false);
-            }
+            commit('setLoading', false);
             commit('setInitialized', true);
         },
         setLoading({commit}, isLoading) {
