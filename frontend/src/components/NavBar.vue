@@ -21,11 +21,6 @@ export default {
       menuItems: []
     };
   },
-  created() {
-    // 初始化菜单
-    this.generateMenuItems()
-    this.selectedKeys = [this.$route.path];
-  },
   methods: {
     ...mapMutations(['changeTheme']),
     handleMenuClick({key}) {
@@ -46,7 +41,7 @@ export default {
             hasPermission = false;
           }
         }
-        console.log(route.name, requiresAuth, hasPermission);
+        // console.log(route.name, requiresAuth, hasPermission);
         if (!(hidden || (requiresAuth && !this.isAuthenticated) || !hasPermission)) {
           if (groupName) {
             if (!groups[groupName]) {
@@ -96,6 +91,7 @@ export default {
   },
   watch: {
     $route() {
+      // 当路由变化时，更新选中的菜单项
       this.selectedKeys = [this.$route.path];
     },
     isInitialized: {
