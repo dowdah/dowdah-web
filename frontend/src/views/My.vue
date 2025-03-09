@@ -6,7 +6,7 @@
 import Dashboard from "../components/Dashboard.vue";
 
 export default {
-  name: 'Test',
+  name: 'My',
   components: {
     Dashboard
   }
