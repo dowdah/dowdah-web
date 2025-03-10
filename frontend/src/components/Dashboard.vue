@@ -146,7 +146,7 @@ export default {
   name: 'Dashboard',
   computed: {
     ...mapState(['isLoading', 'user', 'permissions']),
-    ...mapGetters(['cards', 'hasPermission'])
+    ...mapGetters(['hasPermission'])
   },
   methods: {
     ...mapActions(['logout', 'setLoading']),
