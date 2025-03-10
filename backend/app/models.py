@@ -9,7 +9,7 @@ from sqlalchemy.dialects.mysql import BLOB
 from flask_jwt_extended import create_access_token, create_refresh_token
 
 
-from . import db
+from . import db, s3
 
 
 OUTPUT_TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
@@ -102,6 +102,8 @@ class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     alternative_id = db.Column(db.String(64), unique=True, index=True)  # 用户的替代ID，用于生成token，初始化时自动生成
+    r2_uuid = db.Column(db.String(32), unique=True, index=True)  # 用户的R2 UUID
+    avatar_extension = db.Column(db.String(8), nullable=True, default=None)  # 用户头像文件的扩展名
     username = db.Column(db.String(64), unique=True, index=True, nullable=False)  # 用户名
     email = db.Column(db.String(64), unique=True, index=True, nullable=False)  # 邮箱，用于二步验证
     created_at = db.Column(db.DateTime, default=datetime.datetime.now)  # 创建时间
@@ -136,6 +138,14 @@ class User(db.Model):
     def password(self, password):
         self.password_hash = generate_password_hash(password)
 
+    @property
+    def avatar_url(self):
+        if self.avatar_extension:
+            return (f"{current_app.config['R2_ENDPOINT']}/{current_app.config['R2_BUCKET_NAME']}/"
+                    f"{self.r2_uuid}/avatar.{self.avatar_extension}")
+        else:
+            return None
+
     def verify_password(self, password):
         return check_password_hash(self.password_hash, password)
 
@@ -167,6 +177,22 @@ class User(db.Model):
         while User.query.filter_by(alternative_id=alternative_id).first() is not None:
             alternative_id = ''.join(random.choices(string.ascii_letters + string.digits, k=length))
         return alternative_id
+
+    def generate_presigned_url_avatar(self, file_extension, mime_type, expires_in=None):
+        self.avatar_extension = file_extension
+        db.session.add(self)
+        db.session.commit()
+        return self.generate_presigned_url(f"avatar.{file_extension}", mime_type, expires_in)
+
+    def generate_presigned_url(self, file_path, mime_type, expires_in=None):
+        # 要注意此处的file_path不包括R2_UUID
+        if expires_in is None:
+            expires_in = current_app.config['R2_PRESIGNED_URL_EXPIRES']
+        return s3.generate_presigned_url('put_object', Params={
+            'Bucket': current_app.config['R2_BUCKET_NAME'],
+            'Key': f"{self.r2_uuid}/{file_path}",
+            'ContentType': mime_type
+        }, ExpiresIn=expires_in)
 
     def to_json(self, include_sensitive=False, include_related=True):
         user_json = {
