@@ -86,7 +86,8 @@ const store = createStore({
                     }
                     console.log('User set:', response.data.user);
                 } catch (error) {
-                    if (error.response && error.response.status === 401 && error.response.data.msg === 'Token has expired') {
+                    if (error.response && error.response.status === 401 &&
+                        error.response.data.msg === 'Token has expired. Please refresh current page.') {
                         console.log('Token expired, refreshing...');
                         if (await store.dispatch('refreshAccessToken')) {
                             console.log('Token refreshed, retrying...');
@@ -121,7 +122,6 @@ const store = createStore({
                 return false;
             }
             try {
-                const refresh_token = localStorage.getItem('refresh_token');
                 axios.defaults.headers.common['Authorization'] = 'Bearer ' + refresh_token;
                 const response = await axios.get(`${BASE_API_URL}/auth/refresh`)
                 localStorage.setItem('access_token', response.data.access_token);
@@ -162,7 +162,6 @@ const store = createStore({
     },
     getters: {
         isAuthenticated: state => !!state.user,
-        cards: state => state.user ? state.user.cards : [],
         hasPermission: function (state) {
             return function (permission) {
                 const permissionNumber = state.permissions[permission];
