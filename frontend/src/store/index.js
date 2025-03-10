@@ -11,7 +11,7 @@ const store = createStore({
         isInitialized: false,
         topBarTitle: null,
         title: SITE_NAME,
-        theme: window.matchMedia('(prefers-color-scheme: light)').matches ? "light":"dark"
+        theme: window.matchMedia('(prefers-color-scheme: light)').matches ? "light" : "dark"
     },
     mutations: {
         setUser(state, user) {
@@ -33,7 +33,7 @@ const store = createStore({
             state.topBarTitle = title;
         },
         changeTheme(state) {
-            state.theme = state.theme==='light' ? 'dark' : 'light';
+            state.theme = state.theme === 'light' ? 'dark' : 'light';
         },
         setTheme(state, theme) {
             state.theme = theme;
