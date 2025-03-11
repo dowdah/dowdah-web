@@ -5,14 +5,12 @@ import urllib.parse
 
 
 s3_bp = Blueprint('s3', __name__)
-# 鉴于 Cloudflare R2 不能使用 Presigned Post，这里使用
-# Worker 来代理 Presigned Put，以控制文件大小
-AVATAR_PROXY = 'https://avatar-proxy.dowdah.com'
 ALLOWED_AVATAR_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif']
 
 
 @s3_bp.route('/get-avatar-upload-presigned-put', methods=['GET'])
 def get_avatar_upload_presigned_put():
+    avatar_proxy = current_app.config.get('AVATAR_PROXY')
     user = g.current_user
     file_extension = request.args.get('ext')
     if file_extension is None:
@@ -31,7 +29,7 @@ def get_avatar_upload_presigned_put():
             }
         else:
             mime_type = f"image/{file_extension}"
-            presigned_url = (f"{AVATAR_PROXY}?presigned-url="
+            presigned_url = (f"{avatar_proxy}?presigned-url="
                              f"{urllib.parse.quote(user.generate_presigned_url_avatar(file_extension, mime_type))}")
             response_json = {
                 'success': True,

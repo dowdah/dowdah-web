@@ -141,7 +141,7 @@ class User(db.Model):
     @property
     def avatar_url(self):
         if self.avatar_extension:
-            return (f"{current_app.config['R2_ENDPOINT']}/{current_app.config['R2_BUCKET_NAME']}/"
+            return (f"{current_app.config['R2_PUBLIC_URL']}/"
                     f"{self.r2_uuid}/avatar.{self.avatar_extension}")
         else:
             return None
@@ -246,6 +246,7 @@ class User(db.Model):
             'last_seen': self.formatted_last_seen,
             'id': self.id,
             'email': self.email,
+            'avatar_url': self.avatar_url,
             'role': self.role.to_json(),
             'confirmed': self.confirmed
         }
