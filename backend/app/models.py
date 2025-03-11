@@ -194,6 +194,51 @@ class User(db.Model):
             'ContentType': mime_type
         }, ExpiresIn=expires_in)
 
+    def generate_presigned_post(self, file_path, mime_type, expires_in=None, min_size=None, max_size=None):
+        """
+        Generate a presigned POST URL to securely upload files directly to S3.
+        Currently, this method is not supported by Cloudflare R2.
+
+        :param file_path: Path of the file (excluding R2_UUID).
+        :param mime_type: MIME type of the file to upload.
+        :param expires_in: Expiration time for presigned URL in seconds (default from config).
+        :param min_size: Minimum file size allowed (in bytes), if specified.
+        :param max_size: Maximum file size allowed (in bytes), if specified.
+        :return: A dictionary containing URL and fields for POST.
+        """
+        if expires_in is None:
+            expires_in = current_app.config['R2_PRESIGNED_URL_EXPIRES']
+
+        conditions = [
+            {"bucket": current_app.config['R2_BUCKET_NAME']},
+            ["starts-with", "$key", f"{self.r2_uuid}/{file_path}"],
+            {"Content-Type": mime_type}
+        ]
+
+        if min_size is not None or max_size is not None:
+            size_condition = ["content-length-range"]
+            if min_size is not None:
+                size_condition.append(min_size)
+            else:
+                size_condition.append(0)  # No minimum size restriction
+            if max_size is not None:
+                size_condition.append(max_size)
+            conditions.append(size_condition)
+
+        fields = {
+            "Content-Type": mime_type,
+        }
+
+        response = s3.generate_presigned_post(
+            Bucket=current_app.config['R2_BUCKET_NAME'],
+            Key=f"{self.r2_uuid}/{file_path}",
+            Fields=fields,
+            Conditions=conditions,
+            ExpiresIn=expires_in
+        )
+
+        return response
+
     def to_json(self, include_sensitive=False, include_related=True):
         user_json = {
             'username': self.username,
