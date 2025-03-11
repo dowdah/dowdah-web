@@ -3,6 +3,7 @@ from ...models import User
 from ... import db
 
 auth_bp = Blueprint('auth', __name__)
+ALLOWED_AVATAR_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif']
 
 
 # 用户注册路由
