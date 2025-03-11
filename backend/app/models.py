@@ -103,7 +103,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     alternative_id = db.Column(db.String(64), unique=True, index=True)  # 用户的替代ID，用于生成token，初始化时自动生成
     r2_uuid = db.Column(db.String(32), unique=True, index=True)  # 用户的R2 UUID
-    avatar_extension = db.Column(db.String(8), nullable=True, default=None)  # 用户头像文件的扩展名
+    avatar_filename = db.Column(db.String(32), nullable=True, default=None)  # 用户头像文件名
     username = db.Column(db.String(64), unique=True, index=True, nullable=False)  # 用户名
     email = db.Column(db.String(64), unique=True, index=True, nullable=False)  # 邮箱，用于二步验证
     created_at = db.Column(db.DateTime, default=datetime.datetime.now)  # 创建时间
@@ -140,9 +140,9 @@ class User(db.Model):
 
     @property
     def avatar_url(self):
-        if self.avatar_extension:
+        if self.avatar_filename:
             return (f"{current_app.config['R2_PUBLIC_URL']}/"
-                    f"{self.r2_uuid}/avatar.{self.avatar_extension}")
+                    f"{self.r2_uuid}/{self.avatar_filename}")
         else:
             return None
 
@@ -178,11 +178,13 @@ class User(db.Model):
             alternative_id = ''.join(random.choices(string.ascii_letters + string.digits, k=length))
         return alternative_id
 
-    def generate_presigned_url_avatar(self, file_extension, mime_type, expires_in=None):
-        self.avatar_extension = file_extension
+    def generate_presigned_url_avatar(self, filename, mime_type, expires_in=None):
+        if self.avatar_filename:
+            self.r3_delete_file(self.avatar_filename)
+        self.avatar_filename = filename
         db.session.add(self)
         db.session.commit()
-        return self.generate_presigned_url(f"avatar.{file_extension}", mime_type, expires_in)
+        return self.generate_presigned_url(filename, mime_type, expires_in)
 
     def generate_presigned_url(self, file_path, mime_type, expires_in=None):
         # 要注意此处的file_path不包括R2_UUID
@@ -238,6 +240,15 @@ class User(db.Model):
         )
 
         return response
+
+    def r3_delete_file(self, file_path):
+        """
+        Delete a file from R3 storage.
+
+        :param file_path: Path of the file (excluding R2_UUID).
+        :return: A dictionary containing the response from S3.
+        """
+        return s3.delete_object(Bucket=current_app.config['R2_BUCKET_NAME'], Key=f"{self.r2_uuid}/{file_path}")
 
     def to_json(self, include_sensitive=False, include_related=True):
         user_json = {
