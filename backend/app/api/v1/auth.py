@@ -1,9 +1,9 @@
-from flask import jsonify, request, g, abort, current_app, Blueprint, request
+from flask import jsonify, request, g, abort, current_app, Blueprint
 from ...models import User
 from ... import db
 
+
 auth_bp = Blueprint('auth', __name__)
-ALLOWED_AVATAR_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif']
 
 
 # 用户注册路由
