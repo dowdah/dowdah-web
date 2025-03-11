@@ -30,6 +30,13 @@ class Config:
     CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+    # Cloudflare R2 配置
+    R2_ENDPOINT = os.environ.get('R2_ENDPOINT')
+    R2_ACCESS_KEY = os.environ.get('R2_ACCESS_KEY')
+    R2_SECRET_KEY = os.environ.get('R2_SECRET_KEY')
+    R2_BUCKET_NAME = os.environ.get('R2_BUCKET_NAME')
+    R2_PRESIGNED_URL_EXPIRES = 300  # Presigned URL 有效期为 5 分钟
+
     @staticmethod
     def init_app(app):
         pass
