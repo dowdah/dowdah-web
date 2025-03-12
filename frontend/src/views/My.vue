@@ -1,23 +1,23 @@
 <template>
-  <div class="personal-center">
+  <div class="personal-center" v-if="user">
     <!-- 选项卡示例 -->
     <a-card style="margin-top: 16px;">
       <a-tabs default-active-key="1">
         <a-tab-pane key="1" tab="基本信息">
           <a-tooltip>
-            <template #title>点击头像框上传新头像</template>
+            <template #title>点击头像框上传新头像(文件大小须小于 5 MB)</template>
             <a-upload
-                v-model:file-list="fileList"
+                accept="image/jpg, image/jpeg, image/png, image/gif"
                 name="avatar"
                 list-type="picture-card"
                 class="avatar-uploader"
                 :show-upload-list="false"
-                action="https://www.mocky.io/v2/5cc8019d300000980a055e76"
-                :before-upload="beforeUpload"
-                @change="handleChange"
+                :custom-request="avatarUpload"
             >
-              <img v-if="imageUrl" :src="imageUrl" alt="avatar"/>
-              <a-avatar class="default-avatar" v-else shape="square" size="large">D</a-avatar>
+              <img v-if="userHasAvatar" :src="user.avatar_url" alt="avatar" class="avatar-img"/>
+              <a-avatar class="default-avatar" v-else shape="square" size="large">
+                {{ user.username[0].toUpperCase() }}
+              </a-avatar>
             </a-upload>
           </a-tooltip>
           <a-descriptions
@@ -63,7 +63,7 @@
 import {LoadingOutlined, PlusOutlined} from '@ant-design/icons-vue';
 import {mapActions, mapState, mapGetters} from 'vuex';
 import axios from 'axios';
-import {BASE_API_URL} from '@/config/constants';
+import {BASE_API_URL, AVATAR_PROXY} from '@/config/constants';
 
 export default {
   name: 'My',
@@ -81,7 +81,10 @@ export default {
   },
   computed: {
     ...mapState(['isLoading', 'user', 'permissions']),
-    ...mapGetters(['hasPermission'])
+    ...mapGetters(['hasPermission']),
+    userHasAvatar() {
+      return this.user.avatar_url !== null;
+    }
   },
   methods: {
     ...mapActions(['logout', 'setLoading']),
@@ -166,6 +169,38 @@ export default {
     arrayBufferToBase64url(buffer) {
       return btoa(String.fromCharCode(...new Uint8Array(buffer)))
           .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    },
+    async avatarUpload({ file, onSuccess, onError }) {
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size >= maxSize) {
+          this.$message.error('文件大小不能超过5MB');
+          return onError(new Error('文件大小超出限制'));
+        }
+      try {
+        this.setLoading(true)
+        // 1. 获取预签名URL
+        const fileExt = file.name.split('.').pop();
+        const { data } = await axios.get(`${BASE_API_URL}/s3/get-avatar-upload-presigned-put?ext=${fileExt}`);
+
+        // 2. 上传文件到R2
+        let form = new FormData();
+        form.append("presigned", data.presigned);
+        form.append("avatar", file);
+        await axios.post(AVATAR_PROXY, form, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+
+        this.user.avatar_url = data.avatar_url;
+        this.$message.success('头像上传成功');
+        this.setLoading(false)
+        onSuccess();
+      } catch (err) {
+        this.$message.error(err.response.data.msg);
+        this.setLoading(false)
+        onError(err);
+      }
     }
   },
   created() {
@@ -193,5 +228,11 @@ export default {
   align-items: center;
   justify-content: center;
   font-size: 30px;
+}
+
+.avatar-img {
+  width: 90%;
+  height: 90%;
+  object-fit: cover;
 }
 </style>
