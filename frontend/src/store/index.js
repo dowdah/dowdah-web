@@ -1,7 +1,6 @@
 import {createStore} from 'vuex';
-import {BASE_API_URL} from '@/config/constants';
-import {SITE_NAME} from "@/config/constants";
-import axios from 'axios';
+import {SITE_NAME} from '@/config/constants';
+import apiClient from "@/api";
 
 const store = createStore({
     state: {
@@ -44,18 +43,16 @@ const store = createStore({
             console.log('Login action called with credentials:', credentials);
             commit('setLoading', true);
             try {
-                const response = await axios.post(`${BASE_API_URL}/auth/login`, credentials);
+                const response = await apiClient.post('/auth/login', credentials);
                 if (response.data.success) {
                     console.log('Login response:', response.data);
                     localStorage.setItem('access_token', response.data.access_token);
                     localStorage.setItem('refresh_token', response.data.refresh_token);
-                    axios.defaults.headers.common['Authorization'] = 'Bearer ' + response.data.access_token;
                     commit('setUser', response.data.user);
                     if (store.state.permissions === null) {
                         await store.dispatch('fetchPermissions');
                     }
                 } else {
-                    // alert('登录失败：' + response.data.msg)
                     console.error('Login failed:', response.data.msg);
                     throw new Error('Login failed: ' + response.data.msg);
                 }
@@ -69,7 +66,6 @@ const store = createStore({
         async logout({commit}) {
             localStorage.removeItem('access_token');
             localStorage.removeItem('refresh_token');
-            delete axios.defaults.headers.common['Authorization'];
             commit('clearUser');
         },
         async init({commit, state}) {
@@ -77,28 +73,16 @@ const store = createStore({
             const access_token = localStorage.getItem('access_token');
             console.log('Init action called with token:', access_token)
             if (access_token) {
-                axios.defaults.headers.common['Authorization'] = 'Bearer ' + access_token;
                 try {
-                    const response = await axios.get(`${BASE_API_URL}/auth/me`);
+                    const response = await apiClient.get('/auth/me');
                     commit('setUser', response.data.user);
                     if (state.permissions === null) {
                         await store.dispatch('fetchPermissions');
                     }
                     console.log('User set:', response.data.user);
                 } catch (error) {
-                    if (error.response && error.response.status === 401 &&
-                        error.response.data.msg === 'Token has expired. Please refresh current page.') {
-                        console.log('Token expired, refreshing...');
-                        if (await store.dispatch('refreshAccessToken')) {
-                            console.log('Token refreshed, retrying...');
-                            await store.dispatch('init');
-                        } else {
-                            console.log('Refresh token expired, user has been logged out.');
-                        }
-                    } else {
-                        console.error('Init unknown error:', error);
-                        store.dispatch('logout');
-                    }
+                    console.error('Init unknown error:', error);
+                    store.dispatch('logout');
                 }
             }
             commit('setLoading', false);
@@ -109,44 +93,20 @@ const store = createStore({
         },
         async fetchPermissions({commit}) {
             try {
-                const response = await axios.get(`${BASE_API_URL}/permissions`);
+                const response = await apiClient.get('/permissions');
                 commit('setPermissions', response.data.permissions);
             } catch (error) {
                 console.error('Fetch permissions error:', error);
                 throw error;
             }
         },
-        async refreshAccessToken({commit}) {
-            const refresh_token = localStorage.getItem('refresh_token');
-            if (!refresh_token) {
-                return false;
-            }
-            try {
-                axios.defaults.headers.common['Authorization'] = 'Bearer ' + refresh_token;
-                const response = await axios.get(`${BASE_API_URL}/auth/refresh`)
-                localStorage.setItem('access_token', response.data.access_token);
-                axios.defaults.headers.common['Authorization'] = 'Bearer ' + response.data.access_token;
-                return true;
-            } catch (error) {
-                if (error.response && error.response.status === 401) {
-                    localStorage.removeItem('access_token');
-                    localStorage.removeItem('refresh_token');
-                    delete axios.defaults.headers.common['Authorization'];
-                    commit('clearUser');
-                } else {
-                    console.error('Refresh token unknown error:', error);
-                }
-                return false;
-            }
-        },
         async webauthnLoginComplete({commit}, assertionResponse) {
             try {
-                const response = await axios.post(`${BASE_API_URL}/webauthn/login/complete`, assertionResponse);
+                const response = await apiClient.post('/webauthn/login/complete', assertionResponse);
                 if (response.data.success) {
                     commit('setUser', response.data.user);
                     localStorage.setItem('access_token', response.data.access_token);
                     localStorage.setItem('refresh_token', response.data.refresh_token);
-                    axios.defaults.headers.common['Authorization'] = 'Bearer ' + response.data.access_token;
                     if (store.state.permissions === null) {
                         await store.dispatch('fetchPermissions');
                     }

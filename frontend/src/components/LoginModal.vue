@@ -79,8 +79,7 @@
 <script>
 import {UserOutlined, LockOutlined, MailOutlined, QuestionCircleOutlined} from '@ant-design/icons-vue';
 import {mapActions, mapGetters} from 'vuex';
-import axios from 'axios';
-import {BASE_API_URL} from '@/config/constants';
+import apiClient from "@/api";
 
 export default {
   name: 'LoginModal',
@@ -182,7 +181,7 @@ export default {
       let errorOccurred = false;
       let response;
       try {
-        response = await axios.get(`${BASE_API_URL}/webauthn/login/begin`);
+        response = await apiClient.get('/webauthn/login/begin');
       } catch (error) {
         console.error('WebAuthn Login Begin error:', error);
         this.failed_login = true;

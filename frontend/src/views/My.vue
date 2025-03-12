@@ -63,7 +63,8 @@
 import {LoadingOutlined, PlusOutlined} from '@ant-design/icons-vue';
 import {mapActions, mapState, mapGetters} from 'vuex';
 import axios from 'axios';
-import {BASE_API_URL, AVATAR_PROXY} from '@/config/constants';
+import {AVATAR_PROXY} from '@/config/constants';
+import apiClient from '@/api';
 
 export default {
   name: 'My',
@@ -104,7 +105,7 @@ export default {
       let attestationResponse;
       this.setLoading(true)
       try {
-        response = await axios.get(`${BASE_API_URL}/webauthn/register/begin`);
+        response = await apiClient.get('/webauthn/register/begin');
       } catch (error) {
         console.error('WebAuthn Register Begin error:', error);
         this.setLoading(false)
@@ -147,7 +148,7 @@ export default {
         }
         if (!errorOccurred) {
           try {
-            response = await axios.post(`${BASE_API_URL}/webauthn/register/complete`, attestationResponse);
+            response = await apiClient.post('/webauthn/register/complete', attestationResponse);
           } catch (error) {
             console.error('WebAuthn Register Complete error:', error);
             errorOccurred = true;
@@ -180,7 +181,7 @@ export default {
         this.setLoading(true)
         // 1. 获取预签名URL
         const fileExt = file.name.split('.').pop();
-        const { data } = await axios.get(`${BASE_API_URL}/s3/get-avatar-upload-presigned-put?ext=${fileExt}`);
+        const { data } = await apiClient.get(`/s3/get-avatar-upload-presigned-put?ext=${fileExt}`)
 
         // 2. 上传文件到R2
         let form = new FormData();
