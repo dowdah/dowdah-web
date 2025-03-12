@@ -48,7 +48,7 @@
   margin: 0 auto;
 }
 
-.user-info, .card-info, .permissions-info, .webauthn-register {
+.user-info, .permissions-info, .webauthn-register {
   background-color: #ffffff;
   padding: 20px;
   border-radius: 8px;

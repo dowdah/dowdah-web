@@ -89,15 +89,6 @@ export default {
   },
   methods: {
     ...mapActions(['logout', 'setLoading']),
-    async logoutHandler() {
-      const route = this.$route
-      const requiresAuth = route.meta && route.meta.requiresAuth;
-      await this.logout();
-      if (requiresAuth || route.meta.requiresPermission !== undefined) {
-        this.$router.push('/');
-      }
-      this.$message.success('登出成功');
-    },
     async registerWebAuthn() {
       // TODO: 将弹窗提示的内容改为使用 AlertWindow 组件
       let errorOccurred = false;
