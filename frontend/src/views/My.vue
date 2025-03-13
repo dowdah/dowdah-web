@@ -2,7 +2,7 @@
   <div class="personal-center" v-if="user">
     <!-- 选项卡示例 -->
     <a-card style="margin-top: 16px;">
-      <a-tabs default-active-key="1">
+      <a-tabs default-active-key="1" size="large">
         <a-tab-pane key="1" tab="基本信息">
           <a-tooltip>
             <template #title>点击头像框上传新头像(文件大小须小于 5 MB)</template>
@@ -49,10 +49,66 @@
             </a-descriptions-item>
           </a-descriptions>
         </a-tab-pane>
-        ‘
         <a-tab-pane key="2" tab="设置">
-          <!-- 在此处放置个人设置的内容骨架 -->
-          <p>这里展示个人的设置内容。</p>
+          <a-divider style="margin-top: 0">
+            我的通行密钥
+            <a-tooltip placement="topLeft">
+              <template #title>
+                <span>通行密钥 (Passkey) 是一种基于公钥加密的无密码身份验证技术，提供更安全便捷的登录体验，替代传统密码。</span>
+              </template>
+              <QuestionCircleOutlined style="width: 0.7em; height: 0.7em;"/>
+            </a-tooltip>
+          </a-divider>
+          <a-flex justify="flex-end">
+          <a-button class="editable-add-btn" style="margin-bottom: 8px" @click="registerWebAuthn">
+            注册新的通行密钥
+          </a-button>
+            </a-flex>
+          <a-config-provider>
+            <template #renderEmpty>
+              <div style="text-align: center">
+                <dislike-outlined style="font-size: 20px"/>
+                <p>你没有通行密钥，真的太逊了！</p>
+              </div>
+            </template>
+            <a-table bordered :data-source="authenticatorTable" :columns="tableColumns" :pagination="false">
+              <template #bodyCell="{ column, text, record }">
+                <template v-if="column.dataIndex === 'name'">
+                  <div class="editable-cell">
+                    <div v-if="editableData[record.key]" class="editable-cell-input-wrapper">
+                      <a-input v-model:value="editableData[record.key].name" @pressEnter="savePasskey(record.key)"/>
+                      <check-outlined class="editable-cell-icon-check" @click="savePasskey(record.key)"/>
+                    </div>
+                    <div v-else class="editable-cell-text-wrapper">
+                      {{ text || ' ' }}
+                      <edit-outlined class="editable-cell-icon" @click="editPasskey(record.key)"/>
+                    </div>
+                  </div>
+                </template>
+                <template v-else-if="column.dataIndex === 'operation'">
+                  <a-dropdown>
+                    <a class="ant-dropdown-link" @click.prevent>
+                      <EllipsisOutlined/>
+                    </a>
+                    <template #overlay>
+                      <a-menu>
+                        <a-menu-item key="0" disabled>
+                          <a href="javascript:;">
+                            禁用
+                          </a>
+                        </a-menu-item>
+                        <a-menu-item key="1">
+                          <a @click="deletePasskey(record.key)">
+                            删除
+                          </a>
+                        </a-menu-item>
+                      </a-menu>
+                    </template>
+                  </a-dropdown>
+                </template>
+              </template>
+            </a-table>
+          </a-config-provider>
         </a-tab-pane>
       </a-tabs>
     </a-card>
@@ -60,11 +116,15 @@
 </template>
 
 <script>
-import {LoadingOutlined, PlusOutlined} from '@ant-design/icons-vue';
+import {
+  LoadingOutlined, PlusOutlined, DislikeOutlined, EditOutlined, CheckOutlined,
+  EllipsisOutlined, QuestionCircleOutlined
+} from '@ant-design/icons-vue';
 import {mapActions, mapState, mapGetters} from 'vuex';
 import axios from 'axios';
 import {AVATAR_PROXY} from '@/config/constants';
 import apiClient from '@/api';
+import {cloneDeep} from 'lodash-es';
 
 export default {
   name: 'My',
@@ -73,24 +133,63 @@ export default {
       formData: {
         username: '',
         email: ''
-      }
+      },
+      webAuthenticators: [],
+      tableColumns: [
+        {
+          title: '名称',
+          dataIndex: 'name',
+          key: 'name',
+          editable: true
+        },
+        {
+          title: '凭证 ID',
+          dataIndex: 'credential_id',
+          key: 'credential_id'
+        },
+        {
+          title: '创建时间',
+          dataIndex: 'created_at',
+          key: 'created_at'
+        },
+        {
+          title: '操作',
+          dataIndex: 'operation',
+          key: 'operation'
+        }
+      ],
+      editableData: {}
     };
   },
   components: {
     LoadingOutlined,
-    PlusOutlined
+    PlusOutlined,
+    DislikeOutlined,
+    EditOutlined,
+    CheckOutlined,
+    EllipsisOutlined,
+    QuestionCircleOutlined
   },
   computed: {
     ...mapState(['isLoading', 'user', 'permissions']),
     ...mapGetters(['hasPermission']),
     userHasAvatar() {
       return this.user.avatar_url !== null;
+    },
+    authenticatorTable() {
+      return this.webAuthenticators.map(authenticator => {
+        return {
+          key: authenticator.id,
+          name: authenticator.name,
+          credential_id: authenticator.credential_id,
+          created_at: authenticator.created_at
+        };
+      });
     }
   },
   methods: {
     ...mapActions(['logout', 'setLoading']),
     async registerWebAuthn() {
-      // TODO: 将弹窗提示的内容改为使用 AlertWindow 组件
       let errorOccurred = false;
       let response;
       let attestationResponse;
@@ -100,7 +199,7 @@ export default {
       } catch (error) {
         console.error('WebAuthn Register Begin error:', error);
         this.setLoading(false)
-        alert('WebAuthn 注册失败');
+        this.$message.error('WebAuthn 注册失败');
         errorOccurred = true;
       }
       if (!errorOccurred) {
@@ -135,7 +234,7 @@ export default {
           console.error('WebAuthn Register error:', error);
           this.setLoading(false)
           errorOccurred = true;
-          alert('WebAuthn 注册失败')
+          this.$message.error('WebAuthn 注册失败')
         }
         if (!errorOccurred) {
           try {
@@ -144,13 +243,14 @@ export default {
             console.error('WebAuthn Register Complete error:', error);
             errorOccurred = true;
           } finally {
-            this.setLoading(false)
             // 在 finally 代码块中弹窗的原因是避免其阻塞 setLoading(false) 的执行
             if (errorOccurred) {
-              alert('WebAuthn 注册失败');
+              this.$message.error('WebAuthn 注册失败');
             } else {
-              alert('WebAuthn 注册成功');
+              await this.fetchAuthenticators();
+              this.$message.success('WebAuthn 注册成功');
             }
+            this.setLoading(false)
           }
         }
       }
@@ -162,17 +262,17 @@ export default {
       return btoa(String.fromCharCode(...new Uint8Array(buffer)))
           .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     },
-    async avatarUpload({ file, onSuccess, onError }) {
+    async avatarUpload({file, onSuccess, onError}) {
       const maxSize = 5 * 1024 * 1024; // 5MB
       if (file.size >= maxSize) {
-          this.$message.error('文件大小不能超过5MB');
-          return onError(new Error('文件大小超出限制'));
-        }
+        this.$message.error('文件大小不能超过5MB');
+        return onError(new Error('文件大小超出限制'));
+      }
       try {
         this.setLoading(true)
         // 1. 获取预签名URL
         const fileExt = file.name.split('.').pop();
-        const { data } = await apiClient.get(`/s3/get-avatar-upload-presigned-put?ext=${fileExt}`)
+        const {data} = await apiClient.get(`/s3/get-avatar-upload-presigned-put?ext=${fileExt}`)
 
         // 2. 上传文件到R2
         let form = new FormData();
@@ -193,11 +293,52 @@ export default {
         this.setLoading(false)
         onError(err);
       }
+    },
+    async fetchAuthenticators() {
+      try {
+        const response = await apiClient.get('/webauthn/my-authenticators');
+        this.webAuthenticators = response.data.authenticators;
+      } catch (error) {
+        console.error('Fetch authenticators error:', error);
+      }
+    },
+    editPasskey(key) {
+      this.editableData[key] = cloneDeep(this.webAuthenticators.find(item => item.id === key));
+    },
+    async savePasskey(key) {
+      this.setLoading(true)
+      const newData = this.editableData[key];
+      const index = this.webAuthenticators.findIndex(item => item.id === key);
+      const response = await apiClient.put(`/webauthn/operate/${newData.credential_id}`, {
+        name: newData.name
+      });
+      if (response.data.success) {
+        if (index > -1) {
+          this.webAuthenticators.splice(index, 1, newData);
+          delete this.editableData[key];
+        }
+      } else {
+        this.$message.error(response.data.msg);
+      }
+      this.setLoading(false)
+    },
+    async deletePasskey(key) {
+      this.setLoading(true)
+      let deletedAuthenticator = this.webAuthenticators.find(item => item.id === key);
+      const response = await apiClient.delete(`/webauthn/operate/${deletedAuthenticator.credential_id}`);
+      if (response.data.success) {
+        this.webAuthenticators = this.webAuthenticators.filter(item => item.id !== key);
+        this.$message.success("通行密钥已删除。受 JavaScript 安全策略限制，你需要自行删除相关设备上本地存储的通行密钥。")
+      } else {
+        this.$message.error(response.data.msg);
+      }
+      this.setLoading(false)
     }
   },
   created() {
     this.formData.username = this.user.username;
     this.formData.email = this.user.email;
+    this.fetchAuthenticators();
   }
 };
 </script>
@@ -226,5 +367,48 @@ export default {
   width: 90%;
   height: 90%;
   object-fit: cover;
+}
+
+.editable-cell {
+  position: relative;
+
+  .editable-cell-input-wrapper,
+  .editable-cell-text-wrapper {
+    padding-right: 24px;
+  }
+
+  .editable-cell-text-wrapper {
+    padding: 5px 24px 5px 5px;
+  }
+
+  .editable-cell-icon,
+  .editable-cell-icon-check {
+    position: absolute;
+    right: 0;
+    width: 20px;
+    cursor: pointer;
+  }
+
+  .editable-cell-icon {
+    margin-top: 4px;
+    display: none;
+  }
+
+  .editable-cell-icon-check {
+    margin-top: 10px;
+  }
+
+  .editable-cell-icon:hover,
+  .editable-cell-icon-check:hover {
+    color: #108ee9;
+  }
+
+  .editable-add-btn {
+    margin-bottom: 8px;
+  }
+}
+
+.editable-cell:hover .editable-cell-icon {
+  display: inline-block;
 }
 </style>
