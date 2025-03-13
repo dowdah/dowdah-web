@@ -4,12 +4,10 @@
 </template>
 
 <script>
-import Dashboard from '../components/Dashboard.vue';
 import {mapGetters} from 'vuex';
 
 export default {
   name: 'Home',
-  components: {Dashboard},
   computed: {
     ...mapGetters(['isAuthenticated'])
   }
