@@ -276,11 +276,12 @@ class WebAuthnCredential(db.Model):
     __tablename__ = 'webauthn_credentials'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    name = db.Column(db.String(255), nullable=False)
+    name = db.Column(db.String(64), nullable=False)
     credential_id = db.Column(db.String(255), unique=True, nullable=False)  # in Base64url format
     public_key = db.Column(BLOB, nullable=False)
     sign_count = db.Column(db.Integer, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False)
+    disabled = db.Column(db.Boolean, default=False)
 
     @property
     def formatted_created_at(self):
@@ -291,5 +292,7 @@ class WebAuthnCredential(db.Model):
             'id': self.id,
             'name': self.name,
             'credential_id': self.credential_id,
+            'sign_count': self.sign_count,
+            'disabled': self.disabled,
             'created_at': self.formatted_created_at
         }
