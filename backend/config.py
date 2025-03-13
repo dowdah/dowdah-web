@@ -22,6 +22,7 @@ class Config:
         ['True', 'on', '1']
     MAIL_ADMIN = os.environ.get('MAIL_ADMIN', 'dowdah@qq.com')
     MAIL_SUBJECT_PREFIX = '[DOWDAH]'
+    MAX_WEB_AUTHN_CREDENTIALS_PER_USER = 5  # 每个用户最多拥有的 WebAuthn 凭证数量
     API_TOKEN_EXPIRATION = os.environ.get('TOKEN_EXPIRATION', 3600)  # API token 过期时间, 默认为 1 小时
     EMAIL_TOKEN_EXPIRATION = os.environ.get('EMAIL_TOKEN_EXPIRATION', 3600)  # 邮件 token 过期时间, 默认为 1 小时
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=15)  # 设置访问 token 有效期为 15 分钟
