@@ -9,6 +9,7 @@ import json
 
 
 webauthn_bp = Blueprint('webauthn', __name__)
+EDITABLE_ATTRS = ['name']
 
 
 @webauthn_bp.route('/my-authenticators', methods=['GET'])
@@ -19,6 +20,60 @@ def my_authenticators():
         'code': 200,
         'authenticators': [credential.to_json() for credential in user.webauthn_credentials]
     }
+    return jsonify(response_json), response_json['code']
+
+
+@webauthn_bp.route('/operate/<credential_id>', methods=['PUT', 'DELETE'])
+def operate(credential_id):
+    user = g.current_user
+    credential = WebAuthnCredential.query.filter_by(user_id=user.id,
+                                                    credential_id=credential_id).first()
+    if credential:
+        if request.method == 'PUT':
+            request_json = g.data
+            unaccepted_attrs = []
+            for k in request_json.keys():
+                if k not in EDITABLE_ATTRS:
+                    unaccepted_attrs.append(k)
+            if unaccepted_attrs:
+                response_json = {
+                    'success': False,
+                    'code': 400,
+                    'msg': 'Unaccepted attributes: ' + ', '.join(unaccepted_attrs)
+                }
+            else:
+                try:
+                    for k, v in request_json.items():
+                        setattr(credential, k, v)
+                    else:
+                        db.session.add(credential)
+                        db.session.commit()
+                        response_json = {
+                            'success': True,
+                            'code': 200,
+                            'msg': 'Credential updated'
+                        }
+                except Exception as e:
+                    db.session.rollback()
+                    response_json = {
+                        'success': False,
+                        'code': 400,
+                        'msg': 'Check if the data conflicts with existing credentials'
+                    }
+        else:
+            db.session.delete(credential)
+            db.session.commit()
+            response_json = {
+                'success': True,
+                'code': 200,
+                'msg': 'Credential deleted'
+            }
+    else:
+        response_json = {
+            'success': False,
+            'code': 400,
+            'msg': 'Credential not found'
+        }
     return jsonify(response_json), response_json['code']
 
 
