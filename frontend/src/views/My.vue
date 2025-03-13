@@ -59,11 +59,23 @@
               <QuestionCircleOutlined style="width: 0.7em; height: 0.7em;"/>
             </a-tooltip>
           </a-divider>
-          <a-flex justify="flex-end">
-          <a-button class="editable-add-btn" style="margin-bottom: 8px" @click="registerWebAuthn">
-            注册新的通行密钥
-          </a-button>
-            </a-flex>
+          <a-flex justify="space-between" gap="large" align="center">
+            <a-progress
+                :percent="authenticatorPercentage"
+                status="active"
+                :steps="maxAuthenticators"
+                :size="[20 * maxAuthenticators, 10]"
+            >
+              <template #format="percent">
+                <span>({{ webAuthenticators.length }} / {{ maxAuthenticators }})</span>
+              </template>
+            </a-progress>
+            <a-button
+                class="editable-add-btn" style="margin-bottom: 8px"
+                @click="registerWebAuthn" :disabled="!hasMoreAuthenticators">
+              注册新的通行密钥
+            </a-button>
+          </a-flex>
           <a-config-provider>
             <template #renderEmpty>
               <div style="text-align: center">
@@ -72,6 +84,19 @@
               </div>
             </template>
             <a-table bordered :data-source="authenticatorTable" :columns="tableColumns" :pagination="false">
+              <template #headerCell="{ column }">
+                <template v-if="column.dataIndex === 'sign_count'">
+                  <span>已使用次数 </span>
+                  <a-tooltip>
+                    <template #title>
+                      <span>并非所有设备都会递增使用次数，特别是苹果设备。一些现代的 WebAuthn
+                        实现，比如苹果的 Passkey 或者 Android 平台凭证，它们的使用次数可能始终是
+                        0，因为这些凭证是云同步的，不具备唯一的硬件计数器。</span>
+                    </template>
+                    <QuestionCircleOutlined style="width: 0.7em; height: 0.7em;"/>
+                  </a-tooltip>
+                </template>
+              </template>
               <template #bodyCell="{ column, text, record }">
                 <template v-if="column.dataIndex === 'name'">
                   <div class="editable-cell">
@@ -86,25 +111,39 @@
                   </div>
                 </template>
                 <template v-else-if="column.dataIndex === 'operation'">
-                  <a-dropdown>
-                    <a class="ant-dropdown-link" @click.prevent>
-                      <EllipsisOutlined/>
-                    </a>
-                    <template #overlay>
-                      <a-menu>
-                        <a-menu-item key="0" disabled>
-                          <a href="javascript:;">
-                            禁用
-                          </a>
-                        </a-menu-item>
-                        <a-menu-item key="1">
-                          <a @click="deletePasskey(record.key)">
-                            删除
-                          </a>
-                        </a-menu-item>
-                      </a-menu>
-                    </template>
-                  </a-dropdown>
+<!--                  <a-dropdown>-->
+<!--                    <a class="ant-dropdown-link" @click.prevent>-->
+<!--                      <EllipsisOutlined/>-->
+<!--                    </a>-->
+<!--                    <template #overlay>-->
+<!--                      <a-menu>-->
+<!--                        <a-menu-item key="0">-->
+<!--                          <a @click="togglePasskey(record.key)">-->
+<!--                            {{ record.disabled ? '启用' : '禁用' }}-->
+<!--                          </a>-->
+<!--                        </a-menu-item>-->
+<!--                        <a-menu-item key="1">-->
+<!--                          <a @click="deletePasskey(record.key)">-->
+<!--                            删除-->
+<!--                          </a>-->
+<!--                        </a-menu-item>-->
+<!--                      </a-menu>-->
+<!--                    </template>-->
+<!--                  </a-dropdown>-->
+                  <a-popconfirm
+                      v-if="authenticatorTable.length"
+                      :title="`你确定要删除名称为${record.name}的通行密钥吗？`"
+                      @confirm="deletePasskey(record.key)"
+                      ok-text="是"
+                      cancel-text="否"
+                      placement="topRight"
+                  >
+                    <DeleteOutlined style="color: red" />
+                  </a-popconfirm>
+                </template>
+                <template v-else-if="column.dataIndex === 'disabled'">
+                  <a-switch :checked="!record.disabled" checked-children="启用" un-checked-children="禁用"
+                            @click="togglePasskey(record.key)"/>
                 </template>
               </template>
             </a-table>
@@ -118,7 +157,7 @@
 <script>
 import {
   LoadingOutlined, PlusOutlined, DislikeOutlined, EditOutlined, CheckOutlined,
-  EllipsisOutlined, QuestionCircleOutlined
+  EllipsisOutlined, QuestionCircleOutlined, DeleteOutlined
 } from '@ant-design/icons-vue';
 import {mapActions, mapState, mapGetters} from 'vuex';
 import axios from 'axios';
@@ -153,12 +192,23 @@ export default {
           key: 'created_at'
         },
         {
+          title: '已使用次数',
+          dataIndex: 'sign_count',
+          key: 'sign_count'
+        },
+        {
+          title: '状态',
+          dataIndex: 'disabled',
+          key: 'disabled'
+        },
+        {
           title: '操作',
           dataIndex: 'operation',
           key: 'operation'
         }
       ],
-      editableData: {}
+      editableData: {},
+      maxAuthenticators: 0
     };
   },
   components: {
@@ -168,7 +218,8 @@ export default {
     EditOutlined,
     CheckOutlined,
     EllipsisOutlined,
-    QuestionCircleOutlined
+    QuestionCircleOutlined,
+    DeleteOutlined
   },
   computed: {
     ...mapState(['isLoading', 'user', 'permissions']),
@@ -182,9 +233,17 @@ export default {
           key: authenticator.id,
           name: authenticator.name,
           credential_id: authenticator.credential_id,
-          created_at: authenticator.created_at
+          created_at: authenticator.created_at,
+          sign_count: authenticator.sign_count,
+          disabled: authenticator.disabled
         };
       });
+    },
+    hasMoreAuthenticators() {
+      return this.webAuthenticators.length < this.maxAuthenticators;
+    },
+    authenticatorPercentage() {
+      return this.webAuthenticators.length / this.maxAuthenticators * 100;
     }
   },
   methods: {
@@ -298,6 +357,7 @@ export default {
       try {
         const response = await apiClient.get('/webauthn/my-authenticators');
         this.webAuthenticators = response.data.authenticators;
+        this.maxAuthenticators = response.data.max_authenticators;
       } catch (error) {
         console.error('Fetch authenticators error:', error);
       }
@@ -306,8 +366,13 @@ export default {
       this.editableData[key] = cloneDeep(this.webAuthenticators.find(item => item.id === key));
     },
     async savePasskey(key) {
-      this.setLoading(true)
+      const maxNameLength = 30;
       const newData = this.editableData[key];
+      if (newData.name.length > maxNameLength) {
+        this.$message.error(`名称长度不能超过 ${maxNameLength} 个字符`);
+        return;
+      }
+      this.setLoading(true)
       const index = this.webAuthenticators.findIndex(item => item.id === key);
       const response = await apiClient.put(`/webauthn/operate/${newData.credential_id}`, {
         name: newData.name
@@ -329,6 +394,23 @@ export default {
       if (response.data.success) {
         this.webAuthenticators = this.webAuthenticators.filter(item => item.id !== key);
         this.$message.success("通行密钥已删除。受 JavaScript 安全策略限制，你需要自行删除相关设备上本地存储的通行密钥。")
+      } else {
+        this.$message.error(response.data.msg);
+      }
+      this.setLoading(false)
+    },
+    async togglePasskey(key) {
+      this.setLoading(true)
+      let toggledAuthenticator = this.webAuthenticators.find(item => item.id === key);
+      const index = this.webAuthenticators.findIndex(item => item.id === key);
+      const response = await apiClient.put(`/webauthn/operate/${toggledAuthenticator.credential_id}`, {
+        disabled: !toggledAuthenticator.disabled
+      });
+      if (response.data.success) {
+        toggledAuthenticator.disabled = !toggledAuthenticator.disabled;
+        if (index > -1) {
+          this.webAuthenticators.splice(index, 1, toggledAuthenticator);
+        }
       } else {
         this.$message.error(response.data.msg);
       }
