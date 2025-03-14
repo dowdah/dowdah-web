@@ -18,7 +18,7 @@ class Config:
                          'MAIL_PASSWORD, DATABASE_URL.')
     MAIL_USE_SSL = os.environ.get('MAIL_USE_SSL', 'False').lower() in \
         ['True', 'on', '1']
-    MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'True').lower() in \
+    MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'False').lower() in \
         ['True', 'on', '1']
     MAIL_ADMIN = os.environ.get('MAIL_ADMIN', 'dowdah@qq.com')
     MAIL_SUBJECT_PREFIX = '[DOWDAH]'
@@ -50,20 +50,20 @@ class Config:
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    MAIL_SENDER = f"{Config.SITE_NAME}-push-service-dev<{Config.MAIL_ACCOUNT}>"
+    MAIL_SENDER = f"{Config.SITE_NAME.lower()}-push-service-dev<{Config.MAIL_ACCOUNT}>"
     USE_SSL = False
     DOMAIN = 'localhost'
 
 
 class TestingConfig(Config):
     TESTING = True
-    MAIL_SENDER = f"{Config.SITE_NAME}-push-service-test<{Config.MAIL_ACCOUNT}>"
+    MAIL_SENDER = f"{Config.SITE_NAME.lower()}-push-service-test<{Config.MAIL_ACCOUNT}>"
     USE_SSL = False
     DOMAIN = 'localhost'
 
 
 class ProductionConfig(Config):
-    MAIL_SENDER = f"{Config.SITE_NAME}-push-service<{Config.MAIL_ACCOUNT}>"
+    MAIL_SENDER = f"{Config.SITE_NAME.lower()}-push-service<{Config.MAIL_ACCOUNT}>"
     USE_SSL = True
     DOMAIN = 'www.dowdah.com'
 
