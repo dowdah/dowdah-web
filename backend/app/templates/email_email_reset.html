@@ -1,0 +1,6 @@
+{% extends "email_base.html" %}
+{% block title %}Email Changed{% endblock %}
+{% block content %}
+    <p>Hello, {{ user.username }}! You have changed your email at {{ time }} UTC. New email is {{ user.email }}.</p>
+    <p>If it wasn't you, create a new account.</p>
+{% endblock %}

@@ -33,12 +33,17 @@ def main(count=20):
     Role.insert_roles()
     admin = Role.query.filter_by(name='Administrator').first()
     user = Role.query.filter_by(name='User').first()
-    u_1 = User(email='x@dowdah.com', username='Dowdah', password='666666', confirmed=True, role=admin)
+    u_1 = User(email='x@dowdah.com', username='Dowdah', password='666666', email_verified=True, role=admin)
     db.session.add(u_1)
-    u_2 = User(email='strangecarhead@foxmail.com', username='Dowdah2', password='666666', confirmed=True, role=user)
+    u_2 = User(email='strangecarhead@foxmail.com', username='Dowdah2', password='666666', email_verified=True,
+               role=user)
     db.session.add(u_2)
-    u_unconfirmed = User(email='dowdah@qq.com', username='Dowdah3', password='666666', confirmed=False, role=user)
-    db.session.add(u_unconfirmed)
+    u_unconfirmed_1 = User(email='dowdah@qq.com', username='Dowdah3', password='666666', email_verified=False,
+                           role=user)
+    db.session.add(u_unconfirmed_1)
+    u_unconfirmed_2 = User(email='1534887783@qq.com', username='Joecos', password='666666', email_verified=False,
+                            role=user)
+    db.session.add(u_unconfirmed_2)
     db.session.commit()
     users(count=count)
     print("Done.")

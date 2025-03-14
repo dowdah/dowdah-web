@@ -1,0 +1,5 @@
+{% extends "email_base.html" %}
+{% block title %}Account Confirmed{% endblock %}
+{% block content %}
+    <p>Hello, {{ user.username }}! You have confirmed {{ user.email }} as your email address.</p>
+{% endblock %}

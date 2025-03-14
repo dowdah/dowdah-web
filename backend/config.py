@@ -18,10 +18,11 @@ class Config:
                          'MAIL_PASSWORD, DATABASE_URL.')
     MAIL_USE_SSL = os.environ.get('MAIL_USE_SSL', 'False').lower() in \
         ['True', 'on', '1']
-    MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'True').lower() in \
+    MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'False').lower() in \
         ['True', 'on', '1']
     MAIL_ADMIN = os.environ.get('MAIL_ADMIN', 'dowdah@qq.com')
     MAIL_SUBJECT_PREFIX = '[DOWDAH]'
+    MAX_WEB_AUTHN_CREDENTIALS_PER_USER = 5  # 每个用户最多拥有的 WebAuthn 凭证数量
     API_TOKEN_EXPIRATION = os.environ.get('TOKEN_EXPIRATION', 3600)  # API token 过期时间, 默认为 1 小时
     EMAIL_TOKEN_EXPIRATION = os.environ.get('EMAIL_TOKEN_EXPIRATION', 3600)  # 邮件 token 过期时间, 默认为 1 小时
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=15)  # 设置访问 token 有效期为 15 分钟
@@ -30,6 +31,18 @@ class Config:
     CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+    # Cloudflare R2 配置
+    R2_ENDPOINT = os.environ.get('R2_ENDPOINT')
+    R2_ACCESS_KEY = os.environ.get('R2_ACCESS_KEY')
+    R2_SECRET_KEY = os.environ.get('R2_SECRET_KEY')
+    R2_BUCKET_NAME = os.environ.get('R2_BUCKET_NAME')
+    R2_PRESIGNED_URL_EXPIRES = 300  # Presigned URL 有效期为 5 分钟
+    R2_PUBLIC_URL = f'https://r2.dowdah.com'
+
+    # 鉴于 Cloudflare R2 不能使用 Presigned Post，这里使用
+    # Worker 来代理 Presigned Put，以控制文件大小
+    AVATAR_PROXY = 'https://avatar-proxy.dowdah.com'
+
     @staticmethod
     def init_app(app):
         pass
@@ -37,20 +50,20 @@ class Config:
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    MAIL_SENDER = f"{Config.SITE_NAME}-push-service-dev<{Config.MAIL_ACCOUNT}>"
+    MAIL_SENDER = f"{Config.SITE_NAME.lower()}-push-service-dev<{Config.MAIL_ACCOUNT}>"
     USE_SSL = False
     DOMAIN = 'localhost'
 
 
 class TestingConfig(Config):
     TESTING = True
-    MAIL_SENDER = f"{Config.SITE_NAME}-push-service-test<{Config.MAIL_ACCOUNT}>"
+    MAIL_SENDER = f"{Config.SITE_NAME.lower()}-push-service-test<{Config.MAIL_ACCOUNT}>"
     USE_SSL = False
     DOMAIN = 'localhost'
 
 
 class ProductionConfig(Config):
-    MAIL_SENDER = f"{Config.SITE_NAME}-push-service<{Config.MAIL_ACCOUNT}>"
+    MAIL_SENDER = f"{Config.SITE_NAME.lower()}-push-service<{Config.MAIL_ACCOUNT}>"
     USE_SSL = True
     DOMAIN = 'www.dowdah.com'
 

@@ -2,11 +2,14 @@ from sqlalchemy import event
 from sqlalchemy.orm import Session
 from .models import User, Role, WebAuthnCredential
 import datetime
+import uuid
 
 
 def user_before_insert(mapper, connection, target):
     if target.alternative_id is None:
         target.alternative_id = User.generate_alternative_id()
+    if target.r2_uuid is None:
+        target.r2_uuid = uuid.uuid4().hex
 
 
 def user_before_flush(session, flush_context, instances):

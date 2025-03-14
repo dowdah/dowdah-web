@@ -1,0 +1,11 @@
+{% extends "email_base.html" %}
+{% block title %}Confirm your email address{% endblock %}
+{% block content %}
+<div style="padding: 10px; background-color: #e0e7ff; border-radius: 4px; overflow-wrap: break-word; word-wrap: break-word; word-break: break-all;">
+    <p>你好, {{ user.name }}! 请复制以下验证码，在官网提交确认邮箱。</p>
+  <code style="display: block; padding: 10px; background-color: #d0d7ff; border-radius: 4px; color: #333333; font-family: monospace;">
+    {{ token }}
+  </code>
+  <p style="margin: 0; font-size: 14px; color: #333333;">验证码有效期为1小时。你可以在官网随时申请新的验证码。</p>
+</div>
+{% endblock %}
