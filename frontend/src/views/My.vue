@@ -56,7 +56,7 @@
               <template #title>
                 <span>通行密钥 (Passkey) 是一种基于公钥加密的无密码身份验证技术，提供更安全便捷的登录体验，替代传统密码。</span>
               </template>
-              <QuestionCircleOutlined style="width: 0.7em; height: 0.7em;"/>
+              <QuestionCircleOutlined style="width: 0.8em; height: 0.8em;"/>
             </a-tooltip>
           </a-divider>
           <a-flex justify="space-between" gap="large" align="center">
@@ -93,7 +93,7 @@
                         实现，比如苹果的 Passkey 或者 Android 平台凭证，它们的使用次数可能始终是
                         0，因为这些凭证是云同步的，不具备唯一的硬件计数器。</span>
                     </template>
-                    <QuestionCircleOutlined style="width: 0.7em; height: 0.7em;"/>
+                    <QuestionCircleOutlined style="width: 0.8em; height: 0.8em;" />
                   </a-tooltip>
                 </template>
               </template>
@@ -101,7 +101,8 @@
                 <template v-if="column.dataIndex === 'name'">
                   <div class="editable-cell">
                     <div v-if="editableData[record.key]" class="editable-cell-input-wrapper">
-                      <a-input v-model:value="editableData[record.key].name" @pressEnter="savePasskey(record.key)"/>
+                      <a-input v-model:value="editableData[record.key].name" @pressEnter="savePasskey(record.key)"
+                               style="width: 7em"/>
                       <check-outlined class="editable-cell-icon-check" @click="savePasskey(record.key)"/>
                     </div>
                     <div v-else class="editable-cell-text-wrapper">
