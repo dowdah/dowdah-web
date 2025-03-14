@@ -110,7 +110,7 @@ class User(db.Model):
     last_seen = db.Column(db.DateTime, default=datetime.datetime.now)  # 最后一次出现时间
     password_hash = db.Column(db.String(128))  # 密码哈希值
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))  # 用户的身份
-    confirmed = db.Column(db.Boolean, default=False)  # 是否已经通过邮箱验证
+    email_verified = db.Column(db.Boolean, default=False)  # 是否已经通过邮箱验证
     comments = db.Column(db.Text, nullable=True, default='')  # 备注(管理员添加)
     webauthn_credentials = db.relationship('WebAuthnCredential', backref='user', lazy=True)
 
@@ -275,7 +275,7 @@ class User(db.Model):
             'email': self.email,
             'avatar_url': self.avatar_url,
             'role': self.role.to_json(),
-            'confirmed': self.confirmed
+            'email_verified': self.email_verified
         }
         if include_related:
             related_json = {}
