@@ -1,0 +1,24 @@
+<!DOCTYPE PUBLIC “-//W3C//DTD XHTML 1.0 Transitional//EN” “https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd”>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>{% block title %}{% endblock %}</title>
+  </head>
+  <body style="margin: 0; padding: 0; font-family: 'Microsoft Yahei', Tahoma, Arial; color: #333333; background-color: #ffffff;">
+    <div id="main" style="width: 500px; margin: 20px auto; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); border-radius: 8px; overflow: hidden;">
+      <div id="header" style="background-color: #ff7f00; padding: 20px; text-align: center;">
+        <p style="margin: 0; font-size: 24px; color: white;">{{ site_name }}</p>
+      </div>
+      <div id="content" style="padding: 20px;">
+        {% block content %}
+        {% endblock %}
+      </div>
+      <div id="foot" style="background-color: #f9f9f9; padding: 10px; text-align: center; border-top: 1px solid #eaeaea;">
+        <hr style="border: none; border-top: 1px solid #eaeaea; margin: 10px 0;">
+        <p style="margin: 0; font-size: 14px; color: #888888;">这篇邮件为系统自动发送，请不要回复这封邮件。</p>
+        <p style="margin: 0; font-size: 14px; color: #888888;">&copy; {{ current_year }} {{ site_name }}</p>
+      </div>
+    </div>
+  </body>
+</html>
