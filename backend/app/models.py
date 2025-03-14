@@ -1,12 +1,12 @@
 import datetime
-import random
-import string
+import uuid
 
 from flask import current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.dialects.mysql import BLOB
 from flask_jwt_extended import create_access_token, create_refresh_token
+from itsdangerous.url_safe import URLSafeTimedSerializer as Serializer
 
 
 from . import db, s3
@@ -101,7 +101,7 @@ class Permission:
 class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
-    alternative_id = db.Column(db.String(64), unique=True, index=True)  # 用户的替代ID，用于生成token，初始化时自动生成
+    alternative_id = db.Column(db.String(32), unique=True, index=True)  # 用户的替代ID，用于生成token，初始化时自动生成
     r2_uuid = db.Column(db.String(32), unique=True, index=True)  # 用户的R2 UUID
     avatar_filename = db.Column(db.String(32), nullable=True, default=None)  # 用户头像文件名
     username = db.Column(db.String(64), unique=True, index=True, nullable=False)  # 用户名
@@ -172,11 +172,27 @@ class User(db.Model):
         return create_refresh_token(identity=self.alternative_id, expires_delta=expires_in)
 
     @staticmethod
-    def generate_alternative_id(length=12):
-        alternative_id = ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+    def generate_alternative_id():
+        alternative_id = uuid.uuid4().hex
         while User.query.filter_by(alternative_id=alternative_id).first() is not None:
-            alternative_id = ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+            alternative_id = uuid.uuid4().hex
         return alternative_id
+
+    def generate_email_token(self):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        return s.dumps({'alternative_id': self.alternative_id})
+
+    def validate_email_token(self, token, expiration=None):
+        if expiration is None:
+            expiration = current_app.config['EMAIL_TOKEN_EXPIRATION']
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token.encode('utf-8'), max_age=expiration)
+        except:
+            return False
+        if data.get('alternative_id') != self.alternative_id:
+            return False
+        return True
 
     def generate_presigned_url_avatar(self, filename, mime_type, expires_in=None):
         if self.avatar_filename:
