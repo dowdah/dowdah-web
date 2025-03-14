@@ -1,17 +1,21 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from config import config
+from config import config, Config
 from flask_mail import Mail
 from flask_sqlalchemy import SQLAlchemy
 from celery import Celery
 from flask_jwt_extended import JWTManager
+from botocore.client import Config as botoConfig
 import datetime
+import boto3
 
 
 db = SQLAlchemy()
 mail = Mail()
 jwt = JWTManager()
+s3 = boto3.client('s3', aws_access_key_id=Config.R2_ACCESS_KEY, aws_secret_access_key=Config.R2_SECRET_KEY,
+                    endpoint_url=Config.R2_ENDPOINT, config=botoConfig(signature_version='s3v4'))
 
 
 def not_found_error(e):

@@ -13,7 +13,8 @@
       <a-dropdown placement="bottomRight" arrow v-if="user">
         <template #default>
           <a-button class="rightbar">
-            <a-avatar>{{ avatar }}</a-avatar>
+            <a-avatar v-if="user.avatar_url !== null" :src="user.avatar_url" />
+            <a-avatar v-else>{{ avatar_char }}</a-avatar>
             <span class="name">{{ user.username }}</span>
           </a-button>
         </template>
@@ -64,7 +65,7 @@ export default {
   },
   computed: {
     ...mapState(['user', 'title', 'topBarTitle']),
-    avatar() {
+    avatar_char() {
       return this.user && this.user.username ? this.user.username[0].toUpperCase() : '';
     },
   },
