@@ -14,7 +14,7 @@ def users(count=20):
             u = User(email=fake.email(),
                      username=fake.name(),
                      password='666666',
-                     confirmed=True,
+                     email_verified=True,
                      created_at=fake.date_time_this_year(),
                      comments='由 fake.py 生成的随机数据'
                      )
