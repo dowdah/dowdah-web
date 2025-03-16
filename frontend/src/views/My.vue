@@ -322,37 +322,67 @@ export default {
       return btoa(String.fromCharCode(...new Uint8Array(buffer)))
           .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     },
+    async confirmNewAvatar(key) {
+      try {
+        const response = await apiClient.post('/r2/confirm-new-avatar', {
+          key: key
+        });
+        return response.data.success
+      } catch (error) {
+        return false;
+      }
+    }
+    ,
     async avatarUpload({file, onSuccess, onError}) {
       const maxSize = 5 * 1024 * 1024; // 5MB
       if (file.size >= maxSize) {
         this.$message.error('文件大小不能超过5MB');
         return onError(new Error('文件大小超出限制'));
       }
+      this.setLoading(true)
+      let uploadResponse, r2PublicUrl, newAvatarUrl;
       try {
-        this.setLoading(true)
-        // 1. 获取预签名URL
+        // 1. 获取R2参数
         const fileExt = file.name.split('.').pop();
-        const {data} = await apiClient.get(`/s3/get-avatar-upload-presigned-put?ext=${fileExt}`)
+        const {data} = await apiClient.get(`/r2/upload-avatar?ext=${fileExt}`)
+        r2PublicUrl = data.r2_public_url
+        newAvatarUrl = data.new_avatar_url
 
         // 2. 上传文件到R2
         let form = new FormData();
-        form.append("presigned", data.presigned);
-        form.append("avatar", file);
-        await axios.post(AVATAR_PROXY, form, {
+        form.append("r2_params", data.r2_params);
+        form.append("file", file);
+        uploadResponse = await axios.post(data.r2_proxy, form, {
           headers: {
             'Content-Type': 'multipart/form-data'
           }
         });
-
-        this.user.avatar_url = data.avatar_url;
-        this.$message.success('头像上传成功');
-        this.setLoading(false)
-        onSuccess();
       } catch (err) {
-        this.$message.error(err.response.data.msg);
         this.setLoading(false)
+        this.$message.error(err.response.data.msg);
         onError(err);
       }
+      if (uploadResponse.status !== 200) {
+        this.setLoading(false)
+        this.$message.error(`头像上传失败: ${uploadResponse.data.msg}`);
+        onError(new Error(`头像上传失败: ${uploadResponse.data.msg}`));
+        return;
+      }
+      this.user.avatar_url = newAvatarUrl
+      let confirmCount = 0;
+      let confirmSuccess = false;
+      do {
+        confirmSuccess = await this.confirmNewAvatar(uploadResponse.data.key);
+        confirmCount++;
+      } while (!confirmSuccess && confirmCount < 3);
+      if (confirmSuccess) {
+        this.$message.success('头像更新成功');
+        onSuccess();
+      } else {
+        this.$message.error('新头像同步失败，联系管理员处理。');
+        onError(new Error('新头像同步失败，联系管理员处理。'));
+      }
+      this.setLoading(false);
     },
     async fetchAuthenticators() {
       try {
