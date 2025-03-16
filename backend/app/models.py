@@ -151,7 +151,7 @@ class User(db.Model):
 
     def confirm(self, token):
         if self.validate_token(token):
-            self.confirmed = True
+            self.email_verified = True
             db.session.add(self)
             db.session.commit()
             return True
