@@ -6,12 +6,12 @@ v1_bp = Blueprint('v1', __name__)
 from . import views
 from .auth import auth_bp
 from .webauthn import webauthn_bp
-from .s3 import s3_bp
+from .r2 import r2_bp
 
 
 v1_bp.register_blueprint(auth_bp, url_prefix='/auth')
 v1_bp.register_blueprint(webauthn_bp, url_prefix='/webauthn')
-v1_bp.register_blueprint(s3_bp, url_prefix='/s3')
+v1_bp.register_blueprint(r2_bp, url_prefix='/r2')
 
 
 @v1_bp.before_request
