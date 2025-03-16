@@ -36,12 +36,9 @@ class Config:
     R2_ACCESS_KEY = os.environ.get('R2_ACCESS_KEY')
     R2_SECRET_KEY = os.environ.get('R2_SECRET_KEY')
     R2_BUCKET_NAME = os.environ.get('R2_BUCKET_NAME')
-    R2_PRESIGNED_URL_EXPIRES = 300  # Presigned URL 有效期为 5 分钟
+    R2_PARAM_EXPIRATION = 300  # R2 参数有效期(秒)
     R2_PUBLIC_URL = f'https://r2.dowdah.com'
-
-    # 鉴于 Cloudflare R2 不能使用 Presigned Post，这里使用
-    # Worker 来代理 Presigned Put，以控制文件大小
-    AVATAR_PROXY = 'https://avatar-proxy.dowdah.com'
+    R2_PROXY = 'https://r2-proxy.dowdah.com' # 接受用户请求的 Cloudflare Worker 代理
 
     @staticmethod
     def init_app(app):
