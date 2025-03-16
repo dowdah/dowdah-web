@@ -93,7 +93,7 @@
                         实现，比如苹果的 Passkey 或者 Android 平台凭证，它们的使用次数可能始终是
                         0，因为这些凭证是云同步的，不具备唯一的硬件计数器。</span>
                     </template>
-                    <QuestionCircleOutlined style="width: 0.8em; height: 0.8em;" />
+                    <QuestionCircleOutlined style="width: 0.8em; height: 0.8em;"/>
                   </a-tooltip>
                 </template>
               </template>
@@ -139,7 +139,7 @@
                       cancel-text="否"
                       placement="topRight"
                   >
-                    <DeleteOutlined style="color: red" />
+                    <DeleteOutlined style="color: red"/>
                   </a-popconfirm>
                 </template>
                 <template v-else-if="column.dataIndex === 'disabled'">
