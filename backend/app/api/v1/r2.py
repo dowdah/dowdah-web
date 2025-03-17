@@ -43,6 +43,16 @@ def decrypt_str(encrypted_str):
     return decrypted_str.decode('utf-8')
 
 
+def decrypt_json(encrypted_data: str, secret_key: str):
+    encrypted_bytes = base64.b64decode(encrypted_data)
+    iv = encrypted_bytes[:12]
+    ciphertext = encrypted_bytes[12:-16]
+    tag = encrypted_bytes[-16:]
+    cipher = AES.new(secret_key.encode('utf-8'), AES.MODE_GCM, nonce=iv)
+    decrypted_data = cipher.decrypt_and_verify(ciphertext, tag)
+    return json.loads(decrypted_data.decode('utf-8'))
+
+
 @r2_bp.route('/upload-avatar', methods=['GET'])
 def upload_avatar():
     r2_proxy = current_app.config.get('R2_PROXY')
@@ -53,7 +63,7 @@ def upload_avatar():
         response_json = {
             'success': False,
             'code': 400,
-            'msg': 'Missing file extension.'
+            'msg': 'Missing file extension'
         }
     else:
         file_extension = file_extension.lower()
@@ -61,7 +71,7 @@ def upload_avatar():
             response_json = {
                 'success': False,
                 'code': 400,
-                'msg': 'Invalid file extension. Valid extensions: jpg, jpeg, png, gif.'
+                'msg': 'Invalid file extension. Valid extensions: jpg, jpeg, png, gif'
             }
         else:
             key = f"{user.r2_uuid}/avatar_{timestamp}.{file_extension}"
