@@ -150,7 +150,7 @@ class User(db.Model):
         return check_password_hash(self.password_hash, password)
 
     def confirm(self, token):
-        if self.validate_token(token):
+        if self.validate_email_token(token):
             self.email_verified = True
             db.session.add(self)
             db.session.commit()
