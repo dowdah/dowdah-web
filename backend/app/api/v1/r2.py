@@ -40,7 +40,7 @@ def decrypt_str(encrypted_str):
     tag = encrypted_str[-16:]
     cipher = AES.new(current_app.config['SECRET_KEY'].encode('utf-8'), AES.MODE_GCM, nonce=iv)
     decrypted_str = cipher.decrypt_and_verify(ciphertext, tag)
-    return decrypted_str.decode('utf-8').strip('"')
+    return decrypted_str.decode('utf-8')
 
 
 @r2_bp.route('/upload-avatar', methods=['GET'])
