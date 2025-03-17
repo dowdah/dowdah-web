@@ -150,8 +150,8 @@ class User(db.Model):
         return check_password_hash(self.password_hash, password)
 
     def confirm(self, token):
-        if self.validate_token(token):
-            self.confirmed = True
+        if self.validate_email_token(token):
+            self.email_verified = True
             db.session.add(self)
             db.session.commit()
             return True
@@ -193,24 +193,6 @@ class User(db.Model):
         if data.get('alternative_id') != self.alternative_id:
             return False
         return True
-
-    def generate_presigned_url_avatar(self, filename, mime_type, expires_in=None):
-        if self.avatar_filename:
-            self.r3_delete_file(self.avatar_filename)
-        self.avatar_filename = filename
-        db.session.add(self)
-        db.session.commit()
-        return self.generate_presigned_url(filename, mime_type, expires_in)
-
-    def generate_presigned_url(self, file_path, mime_type, expires_in=None):
-        # 要注意此处的file_path不包括R2_UUID
-        if expires_in is None:
-            expires_in = current_app.config['R2_PRESIGNED_URL_EXPIRES']
-        return s3.generate_presigned_url('put_object', Params={
-            'Bucket': current_app.config['R2_BUCKET_NAME'],
-            'Key': f"{self.r2_uuid}/{file_path}",
-            'ContentType': mime_type
-        }, ExpiresIn=expires_in)
 
     def generate_presigned_post(self, file_path, mime_type, expires_in=None, min_size=None, max_size=None):
         """
