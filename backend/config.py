@@ -40,6 +40,8 @@ class Config:
     R2_PUBLIC_URL = f'https://r2.dowdah.com'
     R2_PROXY = 'https://r2-proxy.dowdah.com' # 接受用户请求的 Cloudflare Worker 代理
 
+    TURNSTILE_EXPIRATION = 300  # Turnstile 参数有效期(秒)
+
     @staticmethod
     def init_app(app):
         pass
