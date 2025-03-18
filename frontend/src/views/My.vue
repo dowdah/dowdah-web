@@ -169,7 +169,6 @@ import {
 } from '@ant-design/icons-vue';
 import {mapActions, mapState, mapGetters} from 'vuex';
 import axios from 'axios';
-import {AVATAR_PROXY} from '@/config/constants';
 import apiClient from '@/api';
 import {cloneDeep} from 'lodash-es';
 
