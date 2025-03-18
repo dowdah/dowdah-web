@@ -1,6 +1,8 @@
 from flask import jsonify, request, g, abort, current_app, Blueprint
+from datetime import datetime, timezone
 from ...models import User
 from ... import db
+from ...crypto import decrypt_json
 
 
 auth_bp = Blueprint('auth', __name__)
@@ -41,7 +43,43 @@ def login():
     username = data.get('username')
     email = data.get('email')
     password = data.get('password')
+    encrypted_turnstile_response = data.get('turnstile')
+    fingerprint = data.get('fingerprint')
     user = None
+    if encrypted_turnstile_response is None or fingerprint is None:
+        response_json = {
+            'success': False,
+            'code': 400,
+            'msg': 'Missing turnstile response or fingerprint'
+        }
+        return jsonify(response_json), response_json['code']
+    else:
+        try:
+            turnstile_response = decrypt_json(current_app.config['SECRET_KEY'], encrypted_turnstile_response)
+        except:
+            response_json = {
+                'success': False,
+                'code': 400,
+                'msg': 'Invalid turnstile response'
+            }
+            return jsonify(response_json), response_json['code']
+        if turnstile_response['cdata'] != fingerprint or turnstile_response['action'] != 'login':
+            response_json = {
+                'success': False,
+                'code': 400,
+                'msg': 'Invalid turnstile response'
+            }
+            return jsonify(response_json), response_json['code']
+        challenge_time = datetime.strptime(turnstile_response['challenge_ts'],
+                                           "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
+        time_diff = (datetime.now(timezone.utc) - challenge_time).total_seconds()
+        if time_diff > current_app.config['TURNSTILE_EXPIRATION']:
+            response_json = {
+                'success': False,
+                'code': 400,
+                'msg': 'Turnstile response expired'
+            }
+            return jsonify(response_json), response_json['code']
     if username is None and email is None:
         response_json = {
             'success': False,
