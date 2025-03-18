@@ -10,7 +10,8 @@ const store = createStore({
         isInitialized: false,
         topBarTitle: null,
         title: SITE_NAME,
-        theme: window.matchMedia('(prefers-color-scheme: light)').matches ? "light" : "dark"
+        theme: window.matchMedia('(prefers-color-scheme: light)').matches ? "light" : "dark",
+        fingerprint: null,
     },
     mutations: {
         setUser(state, user) {
@@ -36,6 +37,9 @@ const store = createStore({
         },
         setTheme(state, theme) {
             state.theme = theme;
+        },
+        setFingerprint(state, fingerprint) {
+            state.fingerprint = fingerprint;
         }
     },
     actions: {
