@@ -25,7 +25,9 @@
               :column="{ xxl: 4, xl: 3, lg: 3, md: 3, sm: 2, xs: 1 }"
           >
             <a-descriptions-item label="UID">
-              <a-typography-paragraph class="no-margin-bottom" :copyable="{ tooltip: false }">1</a-typography-paragraph>
+              <a-typography-paragraph class="no-margin-bottom" :copyable="{ tooltip: false }">
+                {{ user.id }}
+              </a-typography-paragraph>
             </a-descriptions-item>
             <a-descriptions-item label="用户名">
               <a-typography-paragraph
