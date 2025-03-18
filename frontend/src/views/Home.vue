@@ -1,5 +1,4 @@
 <template>
-<!--  <Dashboard v-if="isAuthenticated"></Dashboard>-->
   <a-skeleton :paragraph="{rows: 40}" active />
 </template>
 
