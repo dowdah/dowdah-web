@@ -21,29 +21,6 @@ async function encryptStr(secret, strToEncrypt) {
 }
 
 
-async function encryptObj(secret, objToEncrypt) {
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-    const encoder = new TextEncoder();
-    const keyData = encoder.encode(secret);
-    const key = await crypto.subtle.importKey(
-        "raw",
-        keyData,
-        { name: "AES-GCM" },
-        false,
-        ["encrypt"]
-    );
-    const encodedParams = encoder.encode(JSON.stringify(objToEncrypt));
-    const ciphertext = await crypto.subtle.encrypt(
-        { name: "AES-GCM", iv: iv },
-        key,
-        encodedParams
-    );
-    const tagLength = 16; // AES-GCM 默认 128-bit tag
-    const encryptedArray = new Uint8Array([...iv, ...new Uint8Array(ciphertext)]);
-    return btoa(String.fromCharCode(...encryptedArray));
-}
-
-
 export default {
     async fetch(request, env, ctx) {
         let arrayBuffer, fileType, fileSize;
