@@ -1,4 +1,5 @@
 <template>
+  <Fingerprint />
    <a-config-provider :theme="currentTheme">
      <a-spin :spinning='isLoading' :delay="500" tip="加载中..." size="large" :indicator="loadingIndicator">
   <a-layout style="min-height: 100vh" has-sider>
@@ -29,12 +30,13 @@
 
 <script>
 import { theme } from 'ant-design-vue';
-import {mapGetters, mapState} from 'vuex';
+import { mapGetters, mapState } from 'vuex';
 import { LoadingOutlined } from '@ant-design/icons-vue';
 import { h } from 'vue';
 import NavBar from "./components/NavBar.vue";
 import TopBar from "./components/TopBar.vue";
 import LoginModal from "./components/LoginModal.vue";
+import Fingerprint from "./components/Fingerprint.vue";
 import dayjs from 'dayjs';
 
 export default {
@@ -42,7 +44,8 @@ export default {
   components: {
     TopBar,
     NavBar,
-    LoginModal
+    LoginModal,
+    Fingerprint
   },
   data() {
     return {
