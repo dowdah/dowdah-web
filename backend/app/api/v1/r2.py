@@ -1,13 +1,10 @@
 from flask import jsonify, request, g, current_app, Blueprint
-from Crypto.Cipher import AES
-from Crypto.Random import get_random_bytes
+from ...crypto import encrypt_json, decrypt_str
 from ... import db
 
 
 import time
-import base64
 import mimetypes
-import json
 
 
 r2_bp = Blueprint('r2', __name__)
@@ -15,7 +12,7 @@ ALLOWED_AVATAR_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif']
 MAX_AVATAR_SIZE = 5 * 1024 * 1024  # 5MB
 
 
-def generate_params(key, method, verbose_feedback=False, **additional_params):
+def generate_params(secret_key, key, method, verbose_feedback=False, **additional_params):
     expires_timestamp = int(time.time()) + current_app.config['R2_PARAM_EXPIRATION']
     mime_type, _ = mimetypes.guess_type(key.split('/')[-1])
     params = {
@@ -26,31 +23,7 @@ def generate_params(key, method, verbose_feedback=False, **additional_params):
         'verbose_feedback': verbose_feedback
     }
     params.update(additional_params)
-    iv = get_random_bytes(12)
-    cipher = AES.new(current_app.config['SECRET_KEY'].encode('utf-8'), AES.MODE_GCM, nonce=iv)
-    ciphertext, tag = cipher.encrypt_and_digest(json.dumps(params).encode('utf-8'))
-    encrypted_params = iv + ciphertext + tag
-    return base64.b64encode(encrypted_params).decode('utf-8')
-
-
-def decrypt_str(encrypted_str):
-    encrypted_str = base64.b64decode(encrypted_str)
-    iv = encrypted_str[:12]
-    ciphertext = encrypted_str[12:-16]
-    tag = encrypted_str[-16:]
-    cipher = AES.new(current_app.config['SECRET_KEY'].encode('utf-8'), AES.MODE_GCM, nonce=iv)
-    decrypted_str = cipher.decrypt_and_verify(ciphertext, tag)
-    return decrypted_str.decode('utf-8')
-
-
-def decrypt_json(encrypted_data: str, secret_key: str):
-    encrypted_bytes = base64.b64decode(encrypted_data)
-    iv = encrypted_bytes[:12]
-    ciphertext = encrypted_bytes[12:-16]
-    tag = encrypted_bytes[-16:]
-    cipher = AES.new(secret_key.encode('utf-8'), AES.MODE_GCM, nonce=iv)
-    decrypted_data = cipher.decrypt_and_verify(ciphertext, tag)
-    return json.loads(decrypted_data.decode('utf-8'))
+    return encrypt_json(secret_key, params)
 
 
 @r2_bp.route('/upload-avatar', methods=['GET'])
@@ -59,6 +32,7 @@ def upload_avatar():
     user = g.current_user
     timestamp = int(time.time())
     file_extension = request.args.get('ext')
+    secret_key = current_app.config['SECRET_KEY']
     if file_extension is None:
         response_json = {
             'success': False,
@@ -76,11 +50,11 @@ def upload_avatar():
         else:
             key = f"{user.r2_uuid}/avatar_{timestamp}.{file_extension}"
             if user.avatar_filename is not None:
-                r2_params = generate_params(key, 'avatar',
+                r2_params = generate_params(secret_key, key, 'avatar',
                                             previous_avatar_key=f"{user.r2_uuid}/{user.avatar_filename}",
                                             max_size=MAX_AVATAR_SIZE)
             else:
-                r2_params = generate_params(key, 'avatar', max_size=MAX_AVATAR_SIZE)
+                r2_params = generate_params(secret_key, key, 'avatar', max_size=MAX_AVATAR_SIZE)
             response_json = {
                 'success': True,
                 'code': 200,
@@ -103,7 +77,7 @@ def confirm_new_avatar():
         }
     else:
         try:
-            new_avatar_key = decrypt_str(new_avatar_key)
+            new_avatar_key = decrypt_str(current_app.config['SECRET_KEY'], new_avatar_key)
             uuid, filename = new_avatar_key.split('/')
         except:
             response_json = {
