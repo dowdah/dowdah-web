@@ -19,10 +19,10 @@
           <a-radio-button value="passkey" :disabled="passkeyDisabled">
             通行密钥
             <a-tooltip title="您的设备不支持 WebAuthn，无法使用通行密钥登录" v-if="passkeyDisabled">
-              <QuestionCircleOutlined />
+              <QuestionCircleOutlined/>
             </a-tooltip>
-            <a-tooltip title="使用通行密钥登录，免去使用键盘的烦恼！" v-else>
-              <QuestionCircleOutlined />
+            <a-tooltip title="使用通行密钥登录，安全又便捷。" v-else>
+              <QuestionCircleOutlined/>
             </a-tooltip>
           </a-radio-button>
         </a-radio-group>
@@ -63,12 +63,14 @@
           </template>
         </a-input-password>
       </a-form-item>
-
+      <a-flex justify="center" align="center" v-if="open && formState.loginMethod !== 'passkey'">
+        <Turnstile ref="turnstileRef" v-model:cf-token="token" action="login"/>
+      </a-flex>
       <a-form-item v-if="formState.loginMethod === 'passkey'">
         <p>您已选择使用通行密钥登录，直接点击“登录”按钮即可。注意，您必须已经注册 WebAuthn 才能够使用其登录。</p>
       </a-form-item>
 
-      <a-form-item v-if="failed_response_data.code === 401">
+      <a-form-item v-if="failedResponseData.code === 401">
         <!--        <RouterLink to="/reset-pwd" style="float: right">忘记密码？</RouterLink>-->
         <a href="#" style="float: right">忘记密码？</a>
       </a-form-item>
@@ -78,8 +80,11 @@
 
 <script>
 import {UserOutlined, LockOutlined, MailOutlined, QuestionCircleOutlined} from '@ant-design/icons-vue';
-import {mapActions, mapGetters} from 'vuex';
+import {mapActions, mapGetters, mapState} from 'vuex';
+import {TURNSTILE_VERIFY_URL} from "../config/constants";
 import apiClient from "@/api";
+import Turnstile from "../components/Turnstile.vue";
+import axios from 'axios';
 
 export default {
   name: 'LoginModal',
@@ -89,13 +94,14 @@ export default {
     UserOutlined,
     LockOutlined,
     MailOutlined,
-    QuestionCircleOutlined
+    QuestionCircleOutlined,
+    Turnstile
   },
   data() {
     return {
       loading: false,
-      failed_login: false,
-      failed_response_data: {},
+      failedLogin: false,
+      failedResponseData: {},
       formRef: this.$refs.loginForm,
       formState: {
         username: '',
@@ -114,7 +120,11 @@ export default {
           {validator: this.validatePassword, trigger: 'blur'}
         ]
       },
-      passkeyDisabled: false
+      passkeyDisabled: false,
+      token: '',
+      turnstileVerifyResponse: null,
+      turnstileVerified: false,
+      turnstileRef: null
     };
   },
   methods: {
@@ -129,8 +139,8 @@ export default {
         try {
           await this.login(this.credentials);
         } catch (error) {
-          this.failed_login = true;
-          this.failed_response_data = error.response.data;
+          this.failedLogin = true;
+          this.failedResponseData = error.response.data;
         }
       }
       this.loading = false;
@@ -141,7 +151,8 @@ export default {
           this.$router.push('/');
         }
       } else {
-        this.$message.error(this.failed_response_data.msg);
+        this.resetTurnstile()
+        this.$message.error(this.failedResponseData.msg);
       }
     },
     handleCancel() {
@@ -184,8 +195,8 @@ export default {
         response = await apiClient.get('/webauthn/login/begin');
       } catch (error) {
         console.error('WebAuthn Login Begin error:', error);
-        this.failed_login = true;
-        this.failed_response_data = error.response.data;
+        this.failedLogin = true;
+        this.failedResponseData = error.response.data;
         errorOccurred = true;
       }
       if (!errorOccurred) {
@@ -215,19 +226,19 @@ export default {
           await this.webauthnLoginComplete(assertionResponse);
         } catch (error) {
           console.error('WebAuthn login error:', error);
-          this.failed_login = true;
+          this.failedLogin = true;
           if (error.response) {
-            this.failed_response_data = error.response.data;
+            this.failedResponseData = error.response.data;
           } else {
             switch (error.name) {
               case 'NotAllowedError':
-                this.failed_response_data = {msg: '您拒绝了登录请求'};
+                this.failedResponseData = {msg: '您拒绝了登录请求'};
                 break;
               case 'InvalidStateError':
-                this.failed_response_data = {msg: '登录请求已过期，请重试'};
+                this.failedResponseData = {msg: '登录请求已过期，请重试'};
                 break;
               default:
-                this.failed_response_data = {msg: '未知错误'};
+                this.failedResponseData = {msg: '未知错误'};
             }
           }
         }
@@ -239,9 +250,36 @@ export default {
     arrayBufferToBase64url(buffer) {
       return btoa(String.fromCharCode(...new Uint8Array(buffer)))
           .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    },
+    async verifyTurnstile(token) {
+      let formData = new FormData();
+      let response
+      formData.append('token', token);
+      try {
+        response = await axios.post(TURNSTILE_VERIFY_URL, formData);
+      } catch (error) {
+        console.error('Turnstile verify error:', error);
+        this.turnstileVerifyResponse = null;
+        this.turnstileVerified = false;
+      }
+      if (response.status === 200) {
+        this.turnstileVerifyResponse = response.data.cfResponse;
+        this.turnstileVerified = true;
+      } else {
+        this.turnstileVerifyResponse = null;
+        this.turnstileVerified = false;
+      }
+    },
+    resetTurnstile() {
+      if (this.open) {
+        this.turnstileVerifyResponse = null;
+        this.turnstileVerified = false;
+        this.$refs.turnstileRef.reset();
+      }
     }
   },
   computed: {
+    ...mapState(['fingerprint']),
     ...mapGetters(['isAuthenticated']),
     open: {
       get() {
@@ -254,24 +292,47 @@ export default {
     disabled() {
       switch (this.formState.loginMethod) {
         case 'username':
-          return !this.formState.username || !this.formState.password;
+          return !this.formState.username || !this.formState.password || !this.turnstileVerified;
         case 'email':
           return !/^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/.test(this.formState.email)
-              || !this.formState.password;
+              || !this.formState.password || !this.turnstileVerified;
         case 'passkey':
           return this.passkeyDisabled
       }
     },
     credentials() {
       return this.formState.loginMethod === 'username'
-          ? {username: this.formState.username, password: this.formState.password}
-          : {email: this.formState.email, password: this.formState.password};
+          ? {
+            username: this.formState.username,
+            password: this.formState.password,
+            turnstile: this.turnstileVerifyResponse,
+            fingerprint: this.fingerprint
+          }
+          : {
+            email: this.formState.email,
+            password: this.formState.password,
+            turnstile: this.turnstileVerifyResponse,
+            fingerprint: this.fingerprint
+          };
     }
   },
   watch: {
     'formState.loginMethod'(value) {
-      this.failed_login = false;
-      this.failed_response_data = {};
+      this.failedLogin = false;
+      this.failedResponseData = {};
+    },
+    token(val) {
+      if (val) {
+        this.verifyTurnstile(val);
+      }
+    },
+    open(val) {
+      if (val) {
+        this.failedLogin = false;
+        this.failedResponseData = {};
+        this.turnstileVerified = false;
+        this.turnstileVerifyResponse = null;
+      }
     }
   },
   created() {

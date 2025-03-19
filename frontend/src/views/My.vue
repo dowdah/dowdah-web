@@ -25,7 +25,9 @@
               :column="{ xxl: 4, xl: 3, lg: 3, md: 3, sm: 2, xs: 1 }"
           >
             <a-descriptions-item label="UID">
-              <a-typography-paragraph class="no-margin-bottom" :copyable="{ tooltip: false }">1</a-typography-paragraph>
+              <a-typography-paragraph class="no-margin-bottom" :copyable="{ tooltip: false }">
+                {{ user.id }}
+              </a-typography-paragraph>
             </a-descriptions-item>
             <a-descriptions-item label="用户名">
               <a-typography-paragraph
@@ -54,7 +56,12 @@
             我的通行密钥
             <a-tooltip placement="topLeft">
               <template #title>
-                <span>通行密钥 (Passkey) 是一种基于公钥加密的无密码身份验证技术，提供更安全便捷的登录体验，替代传统密码。</span>
+                <span>
+                  在 WebAuthn 标准中，身份验证器是您持有的用于验证身份的硬件或软件组件。它可以根据平台或浏览器能力采用各种形式，
+                  例如基于设备的生物识别或 PIN（如 Touch ID、Windows Hello）、手机或平板、安全密钥等。在受支持的 Windows
+                  计算机上，您可以通过启用 Windows Hello 功能将您的计算机设备作为身份验证器在此处注册。在配备 Touch ID
+                  或 Face ID 的 Apple 设备上，您可以通过 Touch ID 或 Face ID 将您的设备作为身份验证器在此处注册。
+                </span>
               </template>
               <QuestionCircleOutlined style="width: 0.8em; height: 0.8em;"/>
             </a-tooltip>
@@ -162,7 +169,6 @@ import {
 } from '@ant-design/icons-vue';
 import {mapActions, mapState, mapGetters} from 'vuex';
 import axios from 'axios';
-import {AVATAR_PROXY} from '@/config/constants';
 import apiClient from '@/api';
 import {cloneDeep} from 'lodash-es';
 

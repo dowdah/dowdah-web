@@ -7,9 +7,6 @@ from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 
 BYPASS_AUTH = ['api.v1.auth.login', 'api.v1.auth.register', 'api.v1.webauthn.webauthn_login_begin',
                'api.v1.webauthn.webauthn_login_complete']
-CONFIRMATION_BYPASS = BYPASS_AUTH + ['api.v1.auth.send_confirmation', 'api.v1.auth.confirm', 'api.v1.auth.get_me',
-                                     'api.v1.auth.refresh_access_token', 'api.v1.auth.get_me',
-                                     'api.v1.get_permission_info', 'api.v1.webauthn.my_authenticators']
 ALLOW_REFRESH_TOKEN = ['api.v1.auth.refresh_access_token']
 
 
@@ -45,13 +42,5 @@ def before_request():
             'success': False,
             'code': 403,
             'msg': 'Refresh token is not allowed for this endpoint.'
-        }
-        return jsonify(response_json), 403
-    if not (request.endpoint in CONFIRMATION_BYPASS or g.is_anonymous or g.current_user.email_verified):
-        # User email not verified
-        response_json = {
-            'success': False,
-            'code': 403,
-            'msg': 'Email not verified'
         }
         return jsonify(response_json), 403

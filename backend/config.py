@@ -27,8 +27,6 @@ class Config:
     EMAIL_TOKEN_EXPIRATION = os.environ.get('EMAIL_TOKEN_EXPIRATION', 3600)  # 邮件 token 过期时间, 默认为 1 小时
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=15)  # 设置访问 token 有效期为 15 分钟
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)  # 设置刷新 token 有效期为 30 天
-    CELERY_BROKER_URL = 'redis://redis:6379/0'
-    CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # Cloudflare R2 配置
@@ -39,6 +37,8 @@ class Config:
     R2_PARAM_EXPIRATION = 300  # R2 参数有效期(秒)
     R2_PUBLIC_URL = f'https://r2.dowdah.com'
     R2_PROXY = 'https://r2-proxy.dowdah.com' # 接受用户请求的 Cloudflare Worker 代理
+
+    TURNSTILE_EXPIRATION = 300  # Turnstile 参数有效期(秒)
 
     @staticmethod
     def init_app(app):
