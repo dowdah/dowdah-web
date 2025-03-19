@@ -1,7 +1,7 @@
 from flask import jsonify, request, g, abort, current_app, Blueprint
 from datetime import datetime, timezone
 from ...models import User
-from ... import db
+from ... import db, redis_client
 from ...crypto import decrypt_json
 
 
@@ -70,6 +70,13 @@ def login():
                 'msg': 'Invalid turnstile response'
             }
             return jsonify(response_json), response_json['code']
+        if redis_client.get(encrypted_turnstile_response):
+            response_json = {
+                'success': False,
+                'code': 400,
+                'msg': 'Used turnstile'
+            }
+            return jsonify(response_json), response_json['code']
         challenge_time = datetime.strptime(turnstile_response['challenge_ts'],
                                            "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
         time_diff = (datetime.now(timezone.utc) - challenge_time).total_seconds()
@@ -80,6 +87,7 @@ def login():
                 'msg': 'Turnstile response expired'
             }
             return jsonify(response_json), response_json['code']
+        redis_client.set(encrypted_turnstile_response, 'used', ex=current_app.config['TURNSTILE_EXPIRATION'])
     if username is None and email is None:
         response_json = {
             'success': False,

@@ -9,6 +9,8 @@ from flask_jwt_extended import JWTManager
 from botocore.client import Config as botoConfig
 import datetime
 import boto3
+import redis
+import os
 
 
 db = SQLAlchemy()
@@ -16,6 +18,8 @@ mail = Mail()
 jwt = JWTManager()
 s3 = boto3.client('s3', aws_access_key_id=Config.R2_ACCESS_KEY, aws_secret_access_key=Config.R2_SECRET_KEY,
                     endpoint_url=Config.R2_ENDPOINT, config=botoConfig(signature_version='s3v4'))
+REDIS_URL = os.environ.get('REDIS_URL', 'redis://redis:6379/0')
+redis_client = redis.Redis.from_url(REDIS_URL, decode_responses=True)
 
 
 def not_found_error(e):
@@ -29,8 +33,8 @@ def method_not_allowed_error(e):
 def make_celery(app=None):
     celery = Celery(
         app.import_name if app else 'celery_app',
-        backend='redis://redis:6379/0',
-        broker='redis://redis:6379/0'
+        backend=REDIS_URL,
+        broker=REDIS_URL
     )
 
     class ContextTask(celery.Task):
