@@ -46,13 +46,15 @@ def login():
     encrypted_turnstile_response = data.get('turnstile')
     fingerprint = data.get('fingerprint')
     user = None
+    non_production = current_app.config.get('DEBUG') or current_app.config.get('TESTING')
     if encrypted_turnstile_response is None or fingerprint is None:
-        response_json = {
-            'success': False,
-            'code': 400,
-            'msg': 'Missing turnstile response or fingerprint'
-        }
-        return jsonify(response_json), response_json['code']
+        if not non_production:
+            response_json = {
+                'success': False,
+                'code': 400,
+                'msg': 'Missing turnstile response or fingerprint'
+            }
+            return jsonify(response_json), response_json['code']
     else:
         try:
             turnstile_response = decrypt_json(current_app.config['SECRET_KEY'], encrypted_turnstile_response)
