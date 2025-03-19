@@ -172,7 +172,7 @@ export default {
       if (this.formState.loginMethod === 'email') {
         if (!value) {
           return Promise.reject('请输入邮箱');
-        } else if (!/^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/.test(value)) {
+        } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value)) {
           return Promise.reject('请输入正确的邮箱格式');
         } else {
           return Promise.resolve();
