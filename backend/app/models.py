@@ -102,7 +102,7 @@ class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     alternative_id = db.Column(db.String(32), unique=True, index=True)  # 用户的替代ID，用于生成token，初始化时自动生成
-    r2_uuid = db.Column(db.String(32), unique=True, index=True)  # 用户的R2 UUID
+    r2_uuid = db.Column(db.String(32), unique=True, index=True)  # 用户的R2 UUID，初始化时自动生成
     avatar_filename = db.Column(db.String(32), nullable=True, default=None)  # 用户头像文件名
     username = db.Column(db.String(64), unique=True, index=True, nullable=False)  # 用户名
     email = db.Column(db.String(64), unique=True, index=True, nullable=False)  # 邮箱，用于二步验证
@@ -110,7 +110,6 @@ class User(db.Model):
     last_seen = db.Column(db.DateTime, default=datetime.datetime.now)  # 最后一次出现时间
     password_hash = db.Column(db.String(128))  # 密码哈希值
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))  # 用户的身份
-    email_verified = db.Column(db.Boolean, default=False)  # 是否已经通过邮箱验证
     comments = db.Column(db.Text, nullable=True, default='')  # 备注(管理员添加)
     webauthn_credentials = db.relationship('WebAuthnCredential', backref='user', lazy=True)
 
@@ -149,15 +148,6 @@ class User(db.Model):
     def verify_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-    def confirm(self, token):
-        if self.validate_email_token(token):
-            self.email_verified = True
-            db.session.add(self)
-            db.session.commit()
-            return True
-        else:
-            return False
-
     def can(self, perm):
         return self.role is not None and self.role.has_permission(perm)
 
@@ -177,22 +167,6 @@ class User(db.Model):
         while User.query.filter_by(alternative_id=alternative_id).first() is not None:
             alternative_id = uuid.uuid4().hex
         return alternative_id
-
-    def generate_email_token(self):
-        s = Serializer(current_app.config['SECRET_KEY'])
-        return s.dumps({'alternative_id': self.alternative_id})
-
-    def validate_email_token(self, token, expiration=None):
-        if expiration is None:
-            expiration = current_app.config['EMAIL_TOKEN_EXPIRATION']
-        s = Serializer(current_app.config['SECRET_KEY'])
-        try:
-            data = s.loads(token.encode('utf-8'), max_age=expiration)
-        except:
-            return False
-        if data.get('alternative_id') != self.alternative_id:
-            return False
-        return True
 
     def generate_presigned_post(self, file_path, mime_type, expires_in=None, min_size=None, max_size=None):
         """
@@ -256,8 +230,7 @@ class User(db.Model):
             'id': self.id,
             'email': self.email,
             'avatar_url': self.avatar_url,
-            'role': self.role.to_json(),
-            'email_verified': self.email_verified
+            'role': self.role.to_json()
         }
         if include_related:
             related_json = {}

@@ -148,144 +148,148 @@ def refresh_access_token():
 
 @auth_bp.route('/send-verification', methods=['GET'])
 def send_verification():
-    if g.current_user.confirmed:
-        response_json = {
-            'success': False,
-            'code': 400,
-            'msg': 'Email address already verified'
-        }
-    else:
-        task = current_app.celery.send_task('app.send_email', args=[[g.current_user.email],
-                                                                    "请验证你的邮箱", "email_confirm.html"],
-                                            kwargs={'token': g.current_user.generate_email_token(), 'user': g.current_user.to_json()})
-        response_json = {
-            'success': True,
-            'code': 200,
-            'msg': 'Verification email sent',
-            'task_id': task.id
-        }
-    return jsonify(response_json), response_json['code']
+    return abort(403)
+    # if g.current_user.confirmed:
+    #     response_json = {
+    #         'success': False,
+    #         'code': 400,
+    #         'msg': 'Email address already verified'
+    #     }
+    # else:
+    #     task = current_app.celery.send_task('app.send_email', args=[[g.current_user.email],
+    #                                                                 "请验证你的邮箱", "email_confirm.html"],
+    #                                         kwargs={'token': g.current_user.generate_email_token(), 'user': g.current_user.to_json()})
+    #     response_json = {
+    #         'success': True,
+    #         'code': 200,
+    #         'msg': 'Verification email sent',
+    #         'task_id': task.id
+    #     }
+    # return jsonify(response_json), response_json['code']
 
 
 @auth_bp.route('/verify-email/<token>')
 def verify_email(token):
-    if g.current_user.confirmed:
-        response_json = {
-            'success': False,
-            'code': 400,
-            'msg': 'Email address already verified'
-        }
-    elif g.current_user.validate_email_token(token):
-        g.current_user.confirmed = True
-        db.session.add(g.current_user)
-        db.session.commit()
-        response_json = {
-            'success': True,
-            'code': 200,
-            'msg': 'Successfully verified email address'
-        }
-    else:
-        response_json = {
-            'success': False,
-            'code': 400,
-            'msg': 'Invalid token'
-        }
-    return jsonify(response_json), response_json['code']
+    return abort(403)
+    # if g.current_user.confirmed:
+    #     response_json = {
+    #         'success': False,
+    #         'code': 400,
+    #         'msg': 'Email address already verified'
+    #     }
+    # elif g.current_user.validate_email_token(token):
+    #     g.current_user.confirmed = True
+    #     db.session.add(g.current_user)
+    #     db.session.commit()
+    #     response_json = {
+    #         'success': True,
+    #         'code': 200,
+    #         'msg': 'Successfully verified email address'
+    #     }
+    # else:
+    #     response_json = {
+    #         'success': False,
+    #         'code': 400,
+    #         'msg': 'Invalid token'
+    #     }
+    # return jsonify(response_json), response_json['code']
 
 
 @auth_bp.route('/reset-password')
 def send_reset_password_email():
-    username = request.args.get('username')
-    email = request.args.get('email')
-    user, user_1, user_2 = None, None, None
-    if username:
-        user_1 = User.query.filter_by(username=username).first()
-    if email:
-        user_2 = User.query.filter_by(email=email).first()
-    if user_1 and user_2:
-        if user_1 != user_2:
-            response_json = {
-                'success': False,
-                'code': 400,
-                'msg': 'Attributes do not match'
-            }
-            return jsonify(response_json), response_json['code']
-        else:
-            user = user_1
-    elif user_1:
-        user = user_1
-    elif user_2:
-        user = user_2
-    else:
-        response_json = {
-            'success': False,
-            'code': 400,
-            'msg': 'User not found'
-        }
-        return jsonify(response_json), response_json['code']
-    task = current_app.celery.send_task('app.send_email', args=[[user.email],
-                                                                "重置密码", "email_password_reset.html"],
-                                        kwargs={'token': user.generate_email_token(), 'user': user.to_json()})
-    response_json = {
-        'success': True,
-        'code': 200,
-        'msg': 'Reset password email sent',
-        'task_id': task.id
-    }
-    return jsonify(response_json), response_json['code']
+    return abort(403)
+    # username = request.args.get('username')
+    # email = request.args.get('email')
+    # user, user_1, user_2 = None, None, None
+    # if username:
+    #     user_1 = User.query.filter_by(username=username).first()
+    # if email:
+    #     user_2 = User.query.filter_by(email=email).first()
+    # if user_1 and user_2:
+    #     if user_1 != user_2:
+    #         response_json = {
+    #             'success': False,
+    #             'code': 400,
+    #             'msg': 'Attributes do not match'
+    #         }
+    #         return jsonify(response_json), response_json['code']
+    #     else:
+    #         user = user_1
+    # elif user_1:
+    #     user = user_1
+    # elif user_2:
+    #     user = user_2
+    # else:
+    #     response_json = {
+    #         'success': False,
+    #         'code': 400,
+    #         'msg': 'User not found'
+    #     }
+    #     return jsonify(response_json), response_json['code']
+    # task = current_app.celery.send_task('app.send_email', args=[[user.email],
+    #                                                             "重置密码", "email_password_reset.html"],
+    #                                     kwargs={'token': user.generate_email_token(), 'user': user.to_json()})
+    # response_json = {
+    #     'success': True,
+    #     'code': 200,
+    #     'msg': 'Reset password email sent',
+    #     'task_id': task.id
+    # }
+    # return jsonify(response_json), response_json['code']
 
 
 @auth_bp.route('/reset-password/<token>', methods=['POST'])
 def reset_password(token):
-    username = g.data.get('username')
-    email = g.data.get('email')
-    password = g.data.get('password')
-    user, user_1, user_2 = None, None, None
-    if username:
-        user_1 = User.query.filter_by(username=username).first()
-    if email:
-        user_2 = User.query.filter_by(email=email).first()
-    if user_1 and user_2:
-        if user_1 != user_2:
-            response_json = {
-                'success': False,
-                'code': 400,
-                'msg': 'Attributes do not match'
-            }
-            return jsonify(response_json), response_json['code']
-        else:
-            user = user_1
-    elif user_1:
-        user = user_1
-    elif user_2:
-        user = user_2
-    else:
-        response_json = {
-            'success': False,
-            'code': 400,
-            'msg': 'Account not found'
-        }
-        return jsonify(response_json), response_json['code']
-    if user.validate_email_token(token):
-        user.password = password
-        user.alternative_id = User.generate_alternative_id()
-        db.session.add(user)
-        db.session.commit()
-        current_app.celery.send_task('app.send_email', args=[[user.email],
-                                                             "密码重置成功", "email_password_reset.html"],
-                                     kwargs={'user': user.to_json()})
-        response_json = {
-            'success': True,
-            'code': 200,
-            'msg': 'Successfully reset password',
-            'user': user.to_json(),
-            'access_token': user.generate_access_token(),
-            'refresh_token': user.generate_refresh_token()
-        }
-    else:
-        response_json = {
-            'success': False,
-            'code': 400,
-            'msg': 'Invalid token'
-        }
-    return jsonify(response_json), response_json['code']
+    return abort(403)
+    # username = g.data.get('username')
+    # email = g.data.get('email')
+    # password = g.data.get('password')
+    # user, user_1, user_2 = None, None, None
+    # if username:
+    #     user_1 = User.query.filter_by(username=username).first()
+    # if email:
+    #     user_2 = User.query.filter_by(email=email).first()
+    # if user_1 and user_2:
+    #     if user_1 != user_2:
+    #         response_json = {
+    #             'success': False,
+    #             'code': 400,
+    #             'msg': 'Attributes do not match'
+    #         }
+    #         return jsonify(response_json), response_json['code']
+    #     else:
+    #         user = user_1
+    # elif user_1:
+    #     user = user_1
+    # elif user_2:
+    #     user = user_2
+    # else:
+    #     response_json = {
+    #         'success': False,
+    #         'code': 400,
+    #         'msg': 'Account not found'
+    #     }
+    #     return jsonify(response_json), response_json['code']
+    # if user.validate_email_token(token):
+    #     user.password = password
+    #     user.alternative_id = User.generate_alternative_id()
+    #     db.session.add(user)
+    #     db.session.commit()
+    #     current_app.celery.send_task('app.send_email', args=[[user.email],
+    #                                                          "密码重置成功", "email_password_reset.html"],
+    #                                  kwargs={'user': user.to_json()})
+    #     response_json = {
+    #         'success': True,
+    #         'code': 200,
+    #         'msg': 'Successfully reset password',
+    #         'user': user.to_json(),
+    #         'access_token': user.generate_access_token(),
+    #         'refresh_token': user.generate_refresh_token()
+    #     }
+    # else:
+    #     response_json = {
+    #         'success': False,
+    #         'code': 400,
+    #         'msg': 'Invalid token'
+    #     }
+    # return jsonify(response_json), response_json['code']
