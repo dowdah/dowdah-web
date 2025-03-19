@@ -1,8 +1,10 @@
 from flask import jsonify, request, g, abort, current_app, Blueprint
-from datetime import datetime, timezone
 from ...models import User
 from ... import db, redis_client
-from ...crypto import decrypt_json
+from ...decorators import turnstile_required
+import re
+import random
+import string
 
 
 auth_bp = Blueprint('auth', __name__)
@@ -38,58 +40,13 @@ def register():
 
 # 用户登录路由
 @auth_bp.route('/login', methods=['POST'])
+@turnstile_required(action='login')
 def login():
     data = g.data
     username = data.get('username')
     email = data.get('email')
     password = data.get('password')
-    encrypted_turnstile_response = data.get('turnstile')
-    fingerprint = data.get('fingerprint')
     user = None
-    non_production = current_app.config.get('DEBUG') or current_app.config.get('TESTING')
-    if encrypted_turnstile_response is None or fingerprint is None:
-        if not non_production:
-            response_json = {
-                'success': False,
-                'code': 400,
-                'msg': 'Missing turnstile response or fingerprint'
-            }
-            return jsonify(response_json), response_json['code']
-    else:
-        try:
-            turnstile_response = decrypt_json(current_app.config['SECRET_KEY'], encrypted_turnstile_response)
-        except:
-            response_json = {
-                'success': False,
-                'code': 400,
-                'msg': 'Invalid turnstile response'
-            }
-            return jsonify(response_json), response_json['code']
-        if turnstile_response['cdata'] != fingerprint or turnstile_response['action'] != 'login':
-            response_json = {
-                'success': False,
-                'code': 400,
-                'msg': 'Invalid turnstile response'
-            }
-            return jsonify(response_json), response_json['code']
-        if redis_client.get(encrypted_turnstile_response):
-            response_json = {
-                'success': False,
-                'code': 400,
-                'msg': 'Used turnstile'
-            }
-            return jsonify(response_json), response_json['code']
-        challenge_time = datetime.strptime(turnstile_response['challenge_ts'],
-                                           "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
-        time_diff = (datetime.now(timezone.utc) - challenge_time).total_seconds()
-        if time_diff > current_app.config['TURNSTILE_EXPIRATION']:
-            response_json = {
-                'success': False,
-                'code': 400,
-                'msg': 'Turnstile response expired'
-            }
-            return jsonify(response_json), response_json['code']
-        redis_client.set(encrypted_turnstile_response, 'used', ex=current_app.config['TURNSTILE_EXPIRATION'])
     if username is None and email is None:
         response_json = {
             'success': False,
