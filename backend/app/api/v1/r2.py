@@ -1,5 +1,5 @@
 from flask import jsonify, request, g, current_app, Blueprint
-from ...crypto import encrypt_json, decrypt_str
+from ...security import encrypt_json, decrypt_str
 from ... import db
 
 
@@ -12,7 +12,7 @@ ALLOWED_AVATAR_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif']
 MAX_AVATAR_SIZE = 5 * 1024 * 1024  # 5MB
 
 
-def generate_params(secret_key, key, method, verbose_feedback=False, **additional_params):
+def generate_params(key, method, verbose_feedback=False, **additional_params):
     expires_timestamp = int(time.time()) + current_app.config['R2_PARAM_EXPIRATION']
     mime_type, _ = mimetypes.guess_type(key.split('/')[-1])
     params = {
@@ -23,7 +23,7 @@ def generate_params(secret_key, key, method, verbose_feedback=False, **additiona
         'verbose_feedback': verbose_feedback
     }
     params.update(additional_params)
-    return encrypt_json(secret_key, params)
+    return encrypt_json(params)
 
 
 @r2_bp.route('/upload-avatar', methods=['GET'])
@@ -32,7 +32,6 @@ def upload_avatar():
     user = g.current_user
     timestamp = int(time.time())
     file_extension = request.args.get('ext')
-    secret_key = current_app.config['SECRET_KEY']
     if file_extension is None:
         response_json = {
             'success': False,
@@ -50,11 +49,11 @@ def upload_avatar():
         else:
             key = f"{user.r2_uuid}/avatar_{timestamp}.{file_extension}"
             if user.avatar_filename is not None:
-                r2_params = generate_params(secret_key, key, 'avatar',
+                r2_params = generate_params(key, 'avatar',
                                             previous_avatar_key=f"{user.r2_uuid}/{user.avatar_filename}",
                                             max_size=MAX_AVATAR_SIZE)
             else:
-                r2_params = generate_params(secret_key, key, 'avatar', max_size=MAX_AVATAR_SIZE)
+                r2_params = generate_params(key, 'avatar', max_size=MAX_AVATAR_SIZE)
             response_json = {
                 'success': True,
                 'code': 200,
@@ -77,7 +76,7 @@ def confirm_new_avatar():
         }
     else:
         try:
-            new_avatar_key = decrypt_str(current_app.config['SECRET_KEY'], new_avatar_key)
+            new_avatar_key = decrypt_str(new_avatar_key)
             uuid, filename = new_avatar_key.split('/')
         except:
             response_json = {
