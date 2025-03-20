@@ -44,7 +44,7 @@ jobs:
           echo "VUE_APP_TITLE=${{ secrets.VUE_APP_TITLE }}" >> .env
 
       - name: Build Docker Image
-        run: docker-compose --env-file .env -f docker-compose.prod.yml build
+        run: docker compose --env-file .env -f docker-compose.prod.yml build
 
       - name: Save Docker Image
         run: docker save -o dowdah-web-${{ env.TAG }}.tar your-app-name
