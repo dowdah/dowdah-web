@@ -44,10 +44,15 @@ jobs:
           echo "VUE_APP_TITLE=${{ secrets.VUE_APP_TITLE }}" >> .env
 
       - name: Build Docker Image
-        run: docker compose --env-file .env -f docker-compose.prod.yml build
+        run: |
+          docker compose --env-file .env -f docker-compose.prod.yml build
+          docker images
 
       - name: Save Docker Image
-        run: docker save -o dowdah-web-${{ env.TAG }}.tar your-app-name
+        run: |
+          docker save -o dowdah-web-backend-${{ env.TAG }}.tar dowdah-web-backend:latest
+          docker save -o dowdah-web-frontend-${{ env.TAG }}.tar dowdah-web-frontend:latest
+          docker save -o dowdah-web-nginx-${{ env.TAG }}.tar dowdah-web-nginx:latest
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -57,6 +62,9 @@ jobs:
           body: "Automated Docker image build from main branch."
           draft: false
           prerelease: false
-          files: dowdah-web-${{ env.TAG }}.tar
+          files: |
+            dowdah-web-backend-${{ env.TAG }}.tar
+            dowdah-web-frontend-${{ env.TAG }}.tar
+            dowdah-web-nginx-${{ env.TAG }}.tar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
