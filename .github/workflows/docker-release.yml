@@ -1,0 +1,62 @@
+name: Build and Release Docker Image
+
+on:
+  push:
+    branches:
+      - main  # 监听 main 分支
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate Release Tag
+        id: set_tag
+        run: |
+          SHORT_HASH=$(git rev-parse --short HEAD)
+          TIMESTAMP=$(date +'%Y%m%d-%H%M')
+          echo "TAG=v${TIMESTAMP}-${SHORT_HASH}" >> $GITHUB_ENV
+
+      - name: Create .env file from GitHub Secrets
+        run: |
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > .env
+          echo "MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}" >> .env
+          echo "MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}" >> .env
+          echo "NGINX_PORT=${{ secrets.NGINX_PORT }}" >> .env
+          echo "MAIL_ACCOUNT=${{ secrets.MAIL_ACCOUNT }}" >> .env
+          echo "MAIL_ADMIN=${{ secrets.MAIL_ADMIN }}" >> .env
+          echo "MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}" >> .env
+          echo "MAIL_PORT=${{ secrets.MAIL_PORT }}" >> .env
+          echo "MAIL_SERVER=${{ secrets.MAIL_SERVER }}" >> .env
+          echo "R2_ACCESS_KEY=${{ secrets.R2_ACCESS_KEY }}" >> .env
+          echo "R2_BUCKET_NAME=${{ secrets.R2_BUCKET_NAME }}" >> .env
+          echo "R2_ENDPOINT=${{ secrets.R2_ENDPOINT }}" >> .env
+          echo "R2_SECRET_KEY=${{ secrets.R2_SECRET_KEY }}" >> .env
+          echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
+          echo "SERVER_TIMEZONE=${{ secrets.SERVER_TIMEZONE }}" >> .env
+          echo "SITE_NAME=${{ secrets.SITE_NAME }}" >> .env
+          echo "VUE_APP_TITLE=${{ secrets.VUE_APP_TITLE }}" >> .env
+
+      - name: Build Docker Image
+        run: docker-compose --env-file .env -f docker-compose.prod.yml build
+
+      - name: Save Docker Image
+        run: docker save -o dowdah-web-${{ env.TAG }}.tar your-app-name
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG }}
+          name: "Release ${{ env.TAG }}"
+          body: "Automated Docker image build from main branch."
+          draft: false
+          prerelease: false
+          files: dowdah-web-${{ env.TAG }}.tar
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
