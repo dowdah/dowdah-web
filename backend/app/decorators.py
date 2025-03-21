@@ -24,7 +24,7 @@ def turnstile_required(action=None):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             production_mode = not (current_app.config.get('DEBUG') or current_app.config.get('TESTING'))
-            if production_mode:
+            if production_mode or not g.data.get('postman'):
                 encrypted_turnstile_response = g.data.get('turnstile')
                 fingerprint = g.data.get('fingerprint')
                 if encrypted_turnstile_response is None or fingerprint is None:
