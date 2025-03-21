@@ -31,7 +31,7 @@ def before_request():
                 response_json = {
                     'success': False,
                     'code': 401,
-                    'msg': 'Token has expired. Please refresh current page'
+                    'msg': 'Token has expired'
                 }
                 return jsonify(response_json), 401
             else:
