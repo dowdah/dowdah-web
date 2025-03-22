@@ -6,7 +6,8 @@ from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 
 
 BYPASS_AUTH = ['api.v1.auth.login', 'api.v1.auth.register', 'api.v1.webauthn.webauthn_login_begin',
-               'api.v1.webauthn.webauthn_login_complete', 'api.v1.auth.send_verification']
+               'api.v1.webauthn.webauthn_login_complete', 'api.v1.auth.send_email_code',
+               'api.v1.auth.verify_email_code', 'api.v1.get_task', 'api.v1.user.exists']
 ALLOW_REFRESH_TOKEN = ['api.v1.auth.refresh_access_token']
 
 
