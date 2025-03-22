@@ -8,34 +8,59 @@ import string
 
 
 auth_bp = Blueprint('auth', __name__)
+EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
+USERNAME_REGEX = re.compile(r'^(?=.{3,20}$)(?![_.])(?!.*[_.]{2})[a-zA-Z0-9._]+(?<![_.])$')
+PASSWORD_REGEX = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>/?]).{8,}$")
 
 
 @auth_bp.route('/register', methods=['POST'])
+@turnstile_required(action='send_email_code')
 def register():
-    return abort(403)
-    # data = g.data
-    # username = data.get('username')
-    # email = data.get('email')
-    # password = data.get('password')
-    # if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
-    #     response_json = {
-    #         'success': False,
-    #         'code': 400,
-    #         'msg': 'User already exists'
-    #     }
-    # else:
-    #     new_user = User(username=username, email=email, password=password)
-    #     db.session.add(new_user)
-    #     db.session.commit()
-    #     response_json = {
-    #         'success': True,
-    #         'code': 201,
-    #         'msg': 'User created successfully',
-    #         'access_token': new_user.generate_access_token(),
-    #         'refresh_token': new_user.generate_refresh_token(),
-    #         'user': new_user.to_json()
-    #     }
-    # return response_json, response_json['code']
+    data = g.data
+    username = data.get('username')
+    email = data.get('email')
+    password = data.get('password')
+    code = data.get('code')
+    if username is None or email is None or password is None or code is None:
+        response_json = {
+            'success': False,
+            'code': 400,
+            'msg': 'Missing required fields'
+        }
+        return jsonify(response_json), response_json['code']
+    if not EMAIL_REGEX.match(email) or not USERNAME_REGEX.match(username) or not PASSWORD_REGEX.match(password):
+        response_json = {
+            'success': False,
+            'code': 400,
+            'msg': 'Invalid email, username or password'
+        }
+        return jsonify(response_json), response_json['code']
+    if not redis_client.get(f"email_verification_{email}") == code:
+        response_json = {
+            'success': False,
+            'code': 400,
+            'msg': 'Incorrect code'
+        }
+        return jsonify(response_json), response_json['code']
+    if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
+        response_json = {
+            'success': False,
+            'code': 400,
+            'msg': 'User already exists'
+        }
+    else:
+        new_user = User(username=username, email=email, password=password)
+        db.session.add(new_user)
+        db.session.commit()
+        response_json = {
+            'success': True,
+            'code': 201,
+            'msg': 'User created successfully',
+            'access_token': new_user.generate_access_token(),
+            'refresh_token': new_user.generate_refresh_token(),
+            'user': new_user.to_json()
+        }
+    return response_json, response_json['code']
 
 
 # 用户登录路由
@@ -105,53 +130,72 @@ def refresh_access_token():
     return jsonify(response_json), response_json['code']
 
 
-@auth_bp.route('/send-verification', methods=['GET'])
-def send_verification():
-    return abort(403)
-    # if g.current_user.confirmed:
-    #     response_json = {
-    #         'success': False,
-    #         'code': 400,
-    #         'msg': 'Email address already verified'
-    #     }
-    # else:
-    #     task = current_app.celery.send_task('app.send_email', args=[[g.current_user.email],
-    #                                                                 "请验证你的邮箱", "email_confirm.html"],
-    #                                         kwargs={'token': g.current_user.generate_email_token(), 'user': g.current_user.to_json()})
-    #     response_json = {
-    #         'success': True,
-    #         'code': 200,
-    #         'msg': 'Verification email sent',
-    #         'task_id': task.id
-    #     }
-    # return jsonify(response_json), response_json['code']
+@auth_bp.route('/send-email-code', methods=['POST'])
+@turnstile_required(action='send_email_code')
+def send_email_code():
+    email = g.data.get('email')
+    if email and EMAIL_REGEX.match(email):
+        if User.query.filter_by(email=email).first():
+            response_json = {
+                'success': False,
+                'code': 400,
+                'msg': 'Email address already in use'
+            }
+        else:
+            code = ' '.join(random.choices(string.digits, k=6))
+            code_without_blank = code.replace(' ', '')
+            redis_client.set(f"email_verification_{email}", code_without_blank,
+                             ex=current_app.config['EMAIL_CODE_EXPIRATION'])
+            task = current_app.celery.send_task('app.send_email', args=[[email],
+                                                                        f"{code_without_blank}为您的验证码",
+                                                                        "email_verification.html"],
+                                                kwargs={'code': code})
+            response_json = {
+                'success': True,
+                'code': 202,
+                'msg': 'Verification email task created',
+                'task_id': task.id
+            }
+    else:
+        response_json = {
+            'success': False,
+            'code': 400,
+            'msg': 'Invalid email address'
+        }
+    return jsonify(response_json), response_json['code']
 
 
-@auth_bp.route('/verify-email/<token>')
-def verify_email(token):
-    return abort(403)
-    # if g.current_user.confirmed:
-    #     response_json = {
-    #         'success': False,
-    #         'code': 400,
-    #         'msg': 'Email address already verified'
-    #     }
-    # elif g.current_user.validate_email_token(token):
-    #     g.current_user.confirmed = True
-    #     db.session.add(g.current_user)
-    #     db.session.commit()
-    #     response_json = {
-    #         'success': True,
-    #         'code': 200,
-    #         'msg': 'Successfully verified email address'
-    #     }
-    # else:
-    #     response_json = {
-    #         'success': False,
-    #         'code': 400,
-    #         'msg': 'Invalid token'
-    #     }
-    # return jsonify(response_json), response_json['code']
+@auth_bp.route('/verify-email-code', methods=['POST'])
+def verify_email_code():
+    email = g.data.get('email')
+    code = g.data.get('code')
+    if email is None or code is None:
+        response_json = {
+            'success': False,
+            'code': 400,
+            'msg': 'Email or code not provided'
+        }
+    else:
+        if EMAIL_REGEX.match(email):
+            if redis_client.get(f"email_verification_{email}") == code:
+                response_json = {
+                    'success': True,
+                    'code': 200,
+                    'msg': 'Verification successful'
+                }
+            else:
+                response_json = {
+                    'success': False,
+                    'code': 400,
+                    'msg': 'Incorrect code'
+                }
+        else:
+            response_json = {
+                'success': False,
+                'code': 400,
+                'msg': 'Invalid email address'
+            }
+    return jsonify(response_json), response_json['code']
 
 
 @auth_bp.route('/reset-password')
