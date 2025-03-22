@@ -79,8 +79,14 @@
             </a-progress>
             <a-button
                 class="editable-add-btn" style="margin-bottom: 8px"
-                @click="registerWebAuthn" :disabled="!hasMoreAuthenticators">
+                @click="registerWebAuthn" :disabled="passkeyDisabled || !hasMoreAuthenticators">
               注册新的通行密钥
+              <a-tooltip v-if="passkeyDisabled" placement="topLeft">
+                <template #title>
+                  <span>你的当前设备或浏览器不支持通行密钥！</span>
+                </template>
+                <QuestionCircleOutlined style="width: 0.8em; height: 0.8em;"/>
+              </a-tooltip>
             </a-button>
           </a-flex>
           <a-config-provider>
@@ -215,7 +221,8 @@ export default {
         }
       ],
       editableData: {},
-      maxAuthenticators: 0
+      maxAuthenticators: 0,
+      passkeyDisabled: false
     };
   },
   components: {
@@ -458,6 +465,9 @@ export default {
     this.formData.username = this.user.username;
     this.formData.email = this.user.email;
     this.fetchAuthenticators();
+    if (!window.PublicKeyCredential) {
+      this.passkeyDisabled = true;
+    }
   }
 };
 </script>
