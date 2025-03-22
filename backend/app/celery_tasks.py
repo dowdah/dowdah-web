@@ -15,7 +15,10 @@ def send_email(self, recipients, subject, template, **kwargs):
     try:
         mail.send(msg)
     except Exception as e:
-        self.retry(exc=e)
+        self.retry(exc=e, countdown=3, max_retries=3)
+        return {'success': False, 'error': str(e)}
+    else:
+        return {'success': True, 'to': ', '.join(recipients)}
 
 
 @celery.task(name='app.reverse', bind=True)
