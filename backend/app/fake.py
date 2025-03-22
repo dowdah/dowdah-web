@@ -6,6 +6,9 @@ from alive_progress import alive_bar
 import os
 
 
+DEFAULT_PASSWORD = 'Test1234!'
+
+
 def users(count=10):
     print("Making users...")
     fake = Faker()
@@ -14,7 +17,7 @@ def users(count=10):
         while i < count:
             u = User(email=fake.email(),
                      username=fake.name(),
-                     password='666666',
+                     password=DEFAULT_PASSWORD,
                      created_at=fake.date_time_this_year(),
                      comments='由 fake.py 生成的随机数据'
                      )
@@ -51,11 +54,11 @@ def main(count=10, db_exists=False):
     Role.insert_roles()
     admin = Role.query.filter_by(name='Administrator').first()
     user = Role.query.filter_by(name='User').first()
-    u_1 = User(email='x@dowdah.com', username='Dowdah', password='666666', role=admin)
+    u_1 = User(email='x@dowdah.com', username='Dowdah', password=DEFAULT_PASSWORD, role=admin)
     db.session.add(u_1)
-    u_2 = User(email='strangecarhead@foxmail.com', username='Dowdah1', password='666666', role=user)
+    u_2 = User(email='strangecarhead@foxmail.com', username='Dowdah1', password=DEFAULT_PASSWORD, role=user)
     db.session.add(u_2)
-    u_3 = User(email='1534887783@qq.com', username='Joecos', password='666666', role=user)
+    u_3 = User(email='1534887783@qq.com', username='Joecos', password=DEFAULT_PASSWORD, role=user)
     db.session.add(u_3)
     db.session.commit()
     users(count=count)
