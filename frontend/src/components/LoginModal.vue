@@ -10,7 +10,6 @@
         ref="loginForm"
         name="normal_login"
         class="login-form"
-        @validate="handleValidate"
     >
       <a-form-item label="登录方式">
         <a-radio-group v-model:value="formState.loginMethod">
@@ -28,11 +27,10 @@
         </a-radio-group>
       </a-form-item>
       <a-form-item
-          label="昵称"
           name="username"
           v-if="formState.loginMethod === 'username'"
       >
-        <a-input v-model:value="formState.username">
+        <a-input v-model:value="formState.username" placeholder="用户名" autocomplete="username">
           <template #prefix>
             <UserOutlined class="site-form-item-icon"/>
           </template>
@@ -40,12 +38,11 @@
       </a-form-item>
 
       <a-form-item
-          label="邮箱"
           name="email"
           v-if="formState.loginMethod === 'email'"
           type="email"
       >
-        <a-input v-model:value="formState.email">
+        <a-input v-model:value="formState.email" placeholder="邮箱" autocomplete="email">
           <template #prefix>
             <MailOutlined class="site-form-item-icon"/>
           </template>
@@ -53,18 +50,17 @@
       </a-form-item>
 
       <a-form-item
-          label="密码"
           name="password"
           v-if="formState.loginMethod !== 'passkey'"
       >
-        <a-input-password v-model:value="formState.password">
+        <a-input-password v-model:value="formState.password" placeholder="密码" autocomplete="password">
           <template #prefix>
             <LockOutlined class="site-form-item-icon"/>
           </template>
         </a-input-password>
       </a-form-item>
       <a-flex justify="center" align="center" v-if="open && formState.loginMethod !== 'passkey'">
-        <Turnstile ref="turnstileRef" v-model:cf-token="token" action="login"/>
+        <Turnstile ref="turnstile" v-model:cf-token="token" action="login"/>
       </a-flex>
       <a-form-item v-if="formState.loginMethod === 'passkey'">
         <p>您已选择使用通行密钥登录，直接点击“登录”按钮即可。注意，您必须已经注册 WebAuthn 才能够使用其登录。</p>
@@ -81,7 +77,7 @@
 <script>
 import {UserOutlined, LockOutlined, MailOutlined, QuestionCircleOutlined} from '@ant-design/icons-vue';
 import {mapActions, mapGetters, mapState} from 'vuex';
-import {TURNSTILE_VERIFY_URL} from "../config/constants";
+import {TURNSTILE_VERIFY_URL, EMAIL_REGEX, USERNAME_REGEX, PASSWORD_REGEX} from "../config/constants";
 import apiClient from "@/api";
 import Turnstile from "../components/Turnstile.vue";
 import axios from 'axios';
@@ -102,7 +98,6 @@ export default {
       loading: false,
       failedLogin: false,
       failedResponseData: {},
-      formRef: this.$refs.loginForm,
       formState: {
         username: '',
         password: '',
@@ -111,20 +106,19 @@ export default {
       },
       rules: {
         username: [
-          {validator: this.validateUsername, trigger: 'blur'}
+          {validator: this.validateUsername, trigger: 'change'}
         ],
         email: [
-          {validator: this.validateEmail, trigger: 'blur'}
+          {validator: this.validateEmail, trigger: 'change'}
         ],
         password: [
-          {validator: this.validatePassword, trigger: 'blur'}
+          {validator: this.validatePassword, trigger: 'change'}
         ]
       },
       passkeyDisabled: false,
       token: '',
       turnstileVerifyResponse: null,
       turnstileVerified: false,
-      turnstileRef: null
     };
   },
   methods: {
@@ -158,12 +152,15 @@ export default {
     handleCancel() {
       this.open = false;
     },
-    handleValidate(...args) {
-      console.log('validate', args);
-    },
     async validateUsername(_rule, value) {
-      if (this.formState.loginMethod === 'username' && !value) {
-        return Promise.reject('请输入用户名');
+      if (this.formState.loginMethod === 'username') {
+        if (!value) {
+          return Promise.reject('请输入用户名');
+        } else if (!USERNAME_REGEX.test(value)) {
+          return Promise.reject('用户名格式不正确');
+        } else {
+          return Promise.resolve();
+        }
       } else {
         return Promise.resolve();
       }
@@ -172,8 +169,8 @@ export default {
       if (this.formState.loginMethod === 'email') {
         if (!value) {
           return Promise.reject('请输入邮箱');
-        } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value)) {
-          return Promise.reject('请输入正确的邮箱格式');
+        } else if (!EMAIL_REGEX.test(value)) {
+          return Promise.reject('邮箱格式不正确');
         } else {
           return Promise.resolve();
         }
@@ -182,8 +179,14 @@ export default {
       }
     },
     async validatePassword(_rule, value) {
-      if (this.formState.loginMethod !== 'passkey' && !value) {
-        return Promise.reject('请输入密码');
+      if (this.formState.loginMethod !== 'passkey') {
+        if (!value) {
+          return Promise.reject('请输入密码');
+        } else if (!PASSWORD_REGEX.test(value)) {
+          return Promise.reject('密码格式不正确');
+        } else {
+          return Promise.resolve();
+        }
       } else {
         return Promise.resolve();
       }
@@ -251,21 +254,24 @@ export default {
       return btoa(String.fromCharCode(...new Uint8Array(buffer)))
           .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     },
-    async verifyTurnstile(token) {
+    async verifyTurnstile(cfToken) {
       let formData = new FormData();
       let response
-      formData.append('token', token);
+      formData.append('token', cfToken);
       try {
         response = await axios.post(TURNSTILE_VERIFY_URL, formData);
       } catch (error) {
+        this.$message.error('Turnstile 服务器端校验出错，请刷新页面重试');
         console.error('Turnstile verify error:', error);
         this.turnstileVerifyResponse = null;
         this.turnstileVerified = false;
+        return;
       }
-      if (response.status === 200) {
+      if (response && response.status === 200) {
         this.turnstileVerifyResponse = response.data.cfResponse;
         this.turnstileVerified = true;
       } else {
+        this.$message.error('Turnstile 服务器端校验超时，请刷新页面重试');
         this.turnstileVerifyResponse = null;
         this.turnstileVerified = false;
       }
@@ -274,7 +280,7 @@ export default {
       if (this.open) {
         this.turnstileVerifyResponse = null;
         this.turnstileVerified = false;
-        this.$refs.turnstileRef.reset();
+        this.$refs.turnstile.reset();
       }
     }
   },
@@ -292,10 +298,11 @@ export default {
     disabled() {
       switch (this.formState.loginMethod) {
         case 'username':
-          return !this.formState.username || !this.formState.password || !this.turnstileVerified;
+          return !USERNAME_REGEX.test(this.formState.username)
+              || !PASSWORD_REGEX.test(this.formState.password) || !this.turnstileVerified;
         case 'email':
-          return !/^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/.test(this.formState.email)
-              || !this.formState.password || !this.turnstileVerified;
+          return !EMAIL_REGEX.test(this.formState.email)
+              || !PASSWORD_REGEX.test(this.formState.password) || !this.turnstileVerified;
         case 'passkey':
           return this.passkeyDisabled
       }
@@ -332,6 +339,12 @@ export default {
         this.failedResponseData = {};
         this.turnstileVerified = false;
         this.turnstileVerifyResponse = null;
+        this.formState = {
+          username: '',
+          password: '',
+          email: '',
+          loginMethod: 'username'
+        }
       }
     }
   },
@@ -342,3 +355,9 @@ export default {
   }
 };
 </script>
+
+<style>
+.site-form-item-icon {
+  margin-right: 8px;
+}
+</style>
