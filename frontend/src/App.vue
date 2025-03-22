@@ -13,7 +13,7 @@
     <a-layout :style="{ marginLeft: leftMargin, transition: 'margin-left 0.2s' }">
       <a-layout-header :style="{ paddingInline: '20px', backgroundColor: theme === 'dark' ? '#141414' : '#fff'}">
         <TopBar @toggle-collapse="collapsed = !collapsed" :collapsed="collapsed"
-        @show-login-modal="showLoginModal = true"/>
+        @show-login-modal="showLoginModal = true" @show-register-modal="showRegisterModal = true" />
       </a-layout-header>
       <a-layout-content :style="{ margin: '24px 16px 0', overflow: 'initial' }">
         <router-view></router-view>
@@ -24,6 +24,7 @@
     </a-layout>
   </a-layout>
   <LoginModal v-model:mOpen="showLoginModal"/>
+  <RegisterModal v-model:mOpen="showRegisterModal"/>
   </a-spin>
   </a-config-provider>
 </template>
@@ -36,6 +37,7 @@ import { h } from 'vue';
 import NavBar from "./components/NavBar.vue";
 import TopBar from "./components/TopBar.vue";
 import LoginModal from "./components/LoginModal.vue";
+import RegisterModal from "./components/RegisterModal.vue";
 import Fingerprint from "./components/Fingerprint.vue";
 import dayjs from 'dayjs';
 
@@ -45,12 +47,14 @@ export default {
     TopBar,
     NavBar,
     LoginModal,
-    Fingerprint
+    Fingerprint,
+    RegisterModal
   },
   data() {
     return {
       collapsed: false,
       showLoginModal: false,
+      showRegisterModal: false,
       loadingIndicator: h(LoadingOutlined, {style: {fontSize: '30px'}})
     };
   },
