@@ -41,8 +41,8 @@
             <a-menu-item @click="$emit('show-login-modal')">
               登录
             </a-menu-item>
-            <a-menu-item disabled>
-              <a href="javascript:;">注册</a>
+            <a-menu-item @click="$emit('show-register-modal')">
+              注册
             </a-menu-item>
           </a-menu>
         </template>
@@ -58,7 +58,7 @@ import {mapState, mapActions} from 'vuex';
 export default {
   name: 'TopBar',
   props: ['collapsed'],
-  emits: ['toggle-collapse', 'show-login-modal'],
+  emits: ['toggle-collapse', 'show-login-modal', 'show-register-modal'],
   components: {
     MenuFoldOutlined,
     MenuUnfoldOutlined
