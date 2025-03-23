@@ -1,7 +1,7 @@
 from functools import wraps
 from flask import abort, g, current_app, jsonify
 from .models import Permission
-from .security import verify_turnstile
+from .security import verify_turnstile, verify_email_code
 
 
 def permission_required(perm):
@@ -41,3 +41,23 @@ def turnstile_required(action=None):
             return f(*args, **kwargs)
         return decorated_function
     return decorator
+
+
+def email_verification_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        email = g.data.get('email')
+        code = g.data.get('code')
+        if email is None or code is None:
+            response_json = {
+                'success': False,
+                'code': 400,
+                'msg': 'Missing email or code'
+            }
+            return jsonify(response_json), response_json['code']
+        else:
+            email_verify_response = verify_email_code(email, code)
+            if not email_verify_response['success']:
+                return jsonify(email_verify_response), email_verify_response['code']
+        return f(*args, **kwargs)
+    return decorated_function

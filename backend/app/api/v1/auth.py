@@ -1,7 +1,7 @@
 from flask import jsonify, request, g, abort, current_app, Blueprint
 from ...models import User
 from ... import db, redis_client
-from ...decorators import turnstile_required
+from ...decorators import turnstile_required, email_verification_required
 import re
 import random
 import string
@@ -14,32 +14,26 @@ PASSWORD_REGEX = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\
 
 
 @auth_bp.route('/register', methods=['POST'])
-@turnstile_required(action='send_email_code')
+@turnstile_required(action='send_email_code_and_register')
+@email_verification_required
 def register():
     data = g.data
     username = data.get('username')
     email = data.get('email')
     password = data.get('password')
-    code = data.get('code')
-    if username is None or email is None or password is None or code is None:
+    # 由于使用了 email_verification_required 装饰器，这里不需要再次验证 email 和 code
+    if username is None or password is None:
         response_json = {
             'success': False,
             'code': 400,
             'msg': 'Missing required fields'
         }
         return jsonify(response_json), response_json['code']
-    if not EMAIL_REGEX.match(email) or not USERNAME_REGEX.match(username) or not PASSWORD_REGEX.match(password):
+    if not USERNAME_REGEX.match(username) or not PASSWORD_REGEX.match(password):
         response_json = {
             'success': False,
             'code': 400,
-            'msg': 'Invalid email, username or password'
-        }
-        return jsonify(response_json), response_json['code']
-    if not redis_client.get(f"email_verification_{email}") == code:
-        response_json = {
-            'success': False,
-            'code': 400,
-            'msg': 'Incorrect code'
+            'msg': 'Invalid username or password'
         }
         return jsonify(response_json), response_json['code']
     if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
@@ -142,12 +136,11 @@ def send_email_code():
                 'msg': 'Email address already in use'
             }
         else:
-            code = ' '.join(random.choices(string.digits, k=6))
-            code_without_blank = code.replace(' ', '')
-            redis_client.set(f"email_verification_{email}", code_without_blank,
+            code = ''.join(random.choices(string.digits, k=6))
+            redis_client.set(f"email_verification_{email}", code,
                              ex=current_app.config['EMAIL_CODE_EXPIRATION'])
             task = current_app.celery.send_task('app.send_email', args=[[email],
-                                                                        f"{code_without_blank}为您的验证码",
+                                                                        f"{code}为您的验证码",
                                                                         "email_verification.html"],
                                                 kwargs={'code': code})
             response_json = {
