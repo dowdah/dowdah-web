@@ -30,7 +30,7 @@ def users(count=10):
             bar()
 
 
-def main(count=10, db_exists=False):
+def main(count=10, db_exists=True):
     if db_exists:
         users_with_avatar = User.query.filter(User.avatar_filename.isnot(None)).all()
         avatar_count = len(users_with_avatar)
@@ -58,8 +58,6 @@ def main(count=10, db_exists=False):
     db.session.add(u_1)
     u_2 = User(email='strangecarhead@foxmail.com', username='Dowdah1', password=DEFAULT_PASSWORD, role=user)
     db.session.add(u_2)
-    u_3 = User(email='1534887783@qq.com', username='Joecos', password=DEFAULT_PASSWORD, role=user)
-    db.session.add(u_3)
     db.session.commit()
-    users(count=count)
+    # users(count=count)
     print("Done.")
