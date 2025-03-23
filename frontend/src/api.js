@@ -21,7 +21,7 @@ apiClient.interceptors.request.use(config => {
 apiClient.interceptors.response.use(response => response, async error => {
     console.log("Response Interceptor is called");
     if (error.response && error.response.status === 401
-        && error.response.data.msg === 'Token has expired. Please refresh current page.') {
+        && error.response.data.msg === 'Token has expired') {
         const refreshToken = localStorage.getItem('refresh_token');
         if (refreshToken) {
             try {

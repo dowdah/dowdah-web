@@ -24,7 +24,7 @@ class Config:
     MAIL_SUBJECT_PREFIX = '[DOWDAH]'
     MAX_WEB_AUTHN_CREDENTIALS_PER_USER = 5  # 每个用户最多拥有的 WebAuthn 凭证数量
     API_TOKEN_EXPIRATION = os.environ.get('TOKEN_EXPIRATION', 3600)  # API token 过期时间, 默认为 1 小时
-    EMAIL_TOKEN_EXPIRATION = os.environ.get('EMAIL_TOKEN_EXPIRATION', 3600)  # 邮件 token 过期时间, 默认为 1 小时
+    EMAIL_CODE_EXPIRATION = os.environ.get('EMAIL_CODE_EXPIRATION', 600)  # 邮件验证代码过期时间, 默认为 10 分钟
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=15)  # 设置访问 token 有效期为 15 分钟
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)  # 设置刷新 token 有效期为 30 天
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -37,8 +37,6 @@ class Config:
     R2_PARAM_EXPIRATION = 300  # R2 参数有效期(秒)
     R2_PUBLIC_URL = f'https://r2.dowdah.com'
     R2_PROXY = 'https://r2-proxy.dowdah.com' # 接受用户请求的 Cloudflare Worker 代理
-
-    TURNSTILE_EXPIRATION = 300  # Turnstile 参数有效期(秒)
 
     @staticmethod
     def init_app(app):

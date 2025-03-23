@@ -67,6 +67,29 @@ const store = createStore({
                 commit('setLoading', false);
             }
         },
+        async register({commit}, payload) {
+            console.log('Register called with payload:', payload);
+            commit('setLoading', true);
+            let response;
+            try {
+                response = await apiClient.post('/auth/register', payload);
+            } catch (error) {
+                console.error('Register error:', error);
+                commit('setLoading', false);
+                return error.response.data;
+            }
+            if (response.data.success) {
+                console.log('Registration successful');
+                commit('setUser', response.data.user);
+                localStorage.setItem('access_token', response.data.access_token);
+                localStorage.setItem('refresh_token', response.data.refresh_token);
+                if (store.state.permissions === null) {
+                    await store.dispatch('fetchPermissions');
+                }
+            }
+            commit('setLoading', false);
+            return response.data;
+        },
         async logout({commit}) {
             localStorage.removeItem('access_token');
             localStorage.removeItem('refresh_token');

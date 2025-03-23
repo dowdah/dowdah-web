@@ -61,7 +61,7 @@ export default {
         }), {status: 400, headers: {...corsHeaders, 'Content-Type': 'application/json'}});
         const FILE_OVERSIZE_RESPONSE = new Response(JSON.stringify({
             success: false,
-            code: 400,
+            code: 413,
             msg: 'File size exceeds limit'
         }), {status: 400, headers: {...corsHeaders, 'Content-Type': 'application/json'}});
         const R2_METHOD_NOT_ALLOWED_RESPONSE = new Response(JSON.stringify({
@@ -232,11 +232,7 @@ export default {
             case 'list':
 
             default:
-                return new Response(JSON.stringify({
-                    success: false,
-                    code: 405,
-                    msg: `Method ${r2Params.method} not allowed`
-                }), {status: 405, headers: {...corsHeaders, 'Content-Type': 'application/json'}});
+                return R2_METHOD_NOT_ALLOWED_RESPONSE;
         }
     }
 };

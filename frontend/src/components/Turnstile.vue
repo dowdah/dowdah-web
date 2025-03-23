@@ -99,7 +99,11 @@ export default {
     reset() {
       if (window.turnstile) {
         this.$emit('update:cfToken', '');
-        window.turnstile.reset();
+        try {
+          window.turnstile.reset();
+        } catch (e) {
+          console.error('Failed to reset Turnstile:', e);
+        }
       }
     },
 
