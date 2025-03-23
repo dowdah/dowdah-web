@@ -53,19 +53,20 @@
       <div class="step-2" v-if="currentStep === 1">
         <p>确认您的邮箱为：{{ formState.email }}</p>
         <a-flex justify="space-around" align="center">
-          <Turnstile ref="turnstile" v-model:cf-token="cfToken" action="send_email_code"/>
+          <Turnstile ref="turnstile" v-model:cf-token="cfToken" action="send_email_code_and_register"/>
           <a-button type="primary" @click="sendEmailCode" :loading="sendCodeLoading || sendCodeCooldown > 0"
                     :disabled="!turnstileVerified || sendCodeCooldown > 0">
             {{ sendCodeCooldown > 0 ? sendCodeCooldown + '秒后可重发' : '发送验证码' }}
           </a-button>
         </a-flex>
-        <a-input v-model:value="emailCode" placeholder="请输入6位数字验证码" autocomplete="off" :maxlength="6"
-                 @change="validateCode" ref="emailCodeInput" style="margin-top: 10px;margin-bottom: 20px"
-                 @pressEnter="nextStep">
+        <a-input v-model:value="emailCode" placeholder="请输入6位数字验证码" autocomplete="off"
+                 @change="validateCode" ref="emailCodeInput" style="margin-top: 10px;"
+                 @pressEnter="nextStep" :status="codeStatus">
           <template #prefix>
             <SecurityScanOutlined class="site-form-item-icon"/>
           </template>
         </a-input>
+        <p :style="{color: 'red', 'margin-bottom': '20px', opacity: codeStatus === '' ? '0':'1'}">请输入6位数字验证码</p>
       </div>
       <div class="step-3" v-if="currentStep === 2">
         <p>注册成功！</p>
@@ -165,7 +166,8 @@ export default {
       sendCodeTimer: null,
       taskId: '',
       pollCount: 0,
-      pollInterval: null
+      pollInterval: null,
+      codeStatus: '',
     };
   },
   methods: {
@@ -241,11 +243,12 @@ export default {
       }
     },
     validateCode() {
+      this.emailCode = this.emailCode.replace(/\s/g, '');
       if (!/^[0-9]{6}$/.test(this.emailCode)) {
-        this.emailCode = '';
-        this.$refs.emailCodeInput.focus();
+        this.codeStatus = 'error';
         return false;
       } else {
+        this.codeStatus = '';
         return true;
       }
     },
@@ -371,14 +374,14 @@ export default {
         }
       }
       this.pollCount++;
-      // 最大轮询次数为5次
-      if (this.pollCount >= 5) {
+      // 最大轮询次数为4次
+      if (this.pollCount >= 4) {
         this.$message.error('未取得验证码发送结果，请自行检查您是否收到验证码邮件。');
         this.stopPolling();
       }
     },
     startPolling() {
-      this.pollInterval = setInterval(this.checkTaskStatus, 1000)
+      this.pollInterval = setInterval(this.checkTaskStatus, 1750);
     },
     stopPolling() {
       clearInterval(this.pollInterval);
@@ -420,9 +423,12 @@ export default {
         this.turnstileVerified = false;
         this.turnstileVerifyResponse = null;
         this.currentStep = 0;
-        if (this.$refs.registerForm) {
-          this.$refs.registerForm.resetFields();
+        this.formState = {
+          username: '',
+          email: '',
+          password: ''
         }
+        this.emailCode = '';
       }
     }
   }
