@@ -1,7 +1,7 @@
 <template>
   <Fingerprint />
    <a-config-provider :theme="currentTheme">
-     <a-spin :spinning='isLoading' :delay="500" tip="加载中..." size="large" :indicator="loadingIndicator">
+     <a-spin :spinning='isLoading' :delay="500" size="large" :indicator="loadingIndicator">
   <a-layout style="min-height: 100vh" has-sider>
     <a-layout-sider v-model:collapsed="collapsed" :trigger="null" collapsible
                     :style="{ overflow: 'auto', height: '100vh', position: 'fixed', left: 0, top: 0, bottom: 0 ,
@@ -32,7 +32,6 @@
 <script>
 import { theme } from 'ant-design-vue';
 import { mapGetters, mapState } from 'vuex';
-import { LoadingOutlined } from '@ant-design/icons-vue';
 import { h } from 'vue';
 import NavBar from "./components/NavBar.vue";
 import TopBar from "./components/TopBar.vue";
@@ -55,15 +54,15 @@ export default {
       collapsed: false,
       showLoginModal: false,
       showRegisterModal: false,
-      loadingIndicator: h(LoadingOutlined, {style: {fontSize: '30px'}})
+      loadingIndicator: h('img', {
+        src: 'https://r2.dowdah.com/loading_0d00.png', // 你的图片路径
+        class: 'loading-spin-img'
+      })
     };
   },
   computed: {
     ...mapGetters(['isAuthenticated']),
     ...mapState(['user', 'title', 'theme', 'isLoading']),
-    unconfirmed() {
-      return this.isAuthenticated && !this.user.confirmed;
-    },
     currentTheme() {
       return {
         algorithm: this.theme === 'light' ? theme.defaultAlgorithm : theme.darkAlgorithm
@@ -85,10 +84,27 @@ body {
   color: #000;
 }
 
-.use-shadow {
-  border-radius: 6px;
-  background-color: #fff;
-  box-shadow: 0 0 16px 0 rgba(0, 0, 0, .04);
+@keyframes shake {
+  0%   { transform: translate(-50%, -50%) rotate(0deg); }
+  10%  { transform: translate(calc(-50% - 1px), calc(-50% + 1px)) rotate(-1deg); }
+  20%  { transform: translate(calc(-50% + 1px), calc(-50% - 1px)) rotate(1deg); }
+  30%  { transform: translate(calc(-50% - 1px), calc(-50% + 1px)) rotate(0deg); }
+  40%  { transform: translate(calc(-50% + 1px), calc(-50% - 1px)) rotate(1deg); }
+  50%  { transform: translate(calc(-50% - 1px), calc(-50% + 1px)) rotate(-1deg); }
+  60%  { transform: translate(calc(-50% + 1px), calc(-50% - 1px)) rotate(0deg); }
+  70%  { transform: translate(calc(-50% - 1px), calc(-50% + 1px)) rotate(1deg); }
+  80%  { transform: translate(calc(-50% + 1px), calc(-50% - 1px)) rotate(-1deg); }
+  90%  { transform: translate(calc(-50% - 1px), calc(-50% + 1px)) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) rotate(0deg); }
+}
+
+.loading-spin-img {
+  width: 200px !important;
+  height: 200px !important;
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  animation: shake 0.5s infinite;
 }
 
 html, body, #app {
