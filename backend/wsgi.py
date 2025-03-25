@@ -1,7 +1,7 @@
 import os
 import click
 from flask_migrate import Migrate
-from app import create_app, db, mail
+from app import create_app, db, mail, s3
 from app.models import User, WebAuthnCredential
 
 app = create_app(os.getenv('FLASK_CONFIG') or 'default')
@@ -11,7 +11,7 @@ celery = app.celery
 
 @app.shell_context_processor
 def make_shell_context():
-    return dict(db=db, User=User, mail=mail, WebAuthnCredential=WebAuthnCredential)
+    return dict(db=db, User=User, mail=mail, WebAuthnCredential=WebAuthnCredential, s3=s3)
 
 
 @app.cli.command()

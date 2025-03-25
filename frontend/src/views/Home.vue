@@ -1,5 +1,5 @@
 <template>
-  <a-skeleton :paragraph="{rows: 40}" active />
+
 </template>
 
 <script>

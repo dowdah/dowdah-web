@@ -19,7 +19,9 @@
         <router-view></router-view>
       </a-layout-content>
       <a-layout-footer style="text-align: center">
-        {{ title }} ©{{ currentYear }} Created by 练习时长两年半的个人练习生 测试版本不代表最终品质
+        {{ title }} ©{{ currentYear }} Created by 练习时长两年半的个人练习生 测试版本不代表最终品质<br><br>
+        <p>浏览和使用本网站提供的服务，视为您理解并同意
+          <a href="https://r2.dowdah.com/Dowdah_ToS.txt" target="_blank">《服务条款》</a>。</p>
       </a-layout-footer>
     </a-layout>
   </a-layout>

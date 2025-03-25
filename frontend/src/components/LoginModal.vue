@@ -59,13 +59,15 @@
           </template>
         </a-input-password>
       </a-form-item>
+      <p v-if="formState.loginMethod === 'passkey'">您已选择使用通行密钥登录。注意，您必须已经注册
+        WebAuthn 才能够使用其登录。</p>
+      <a-form-item name="agreeToS">
+        <a-checkbox v-model:checked="formState.agreeToS">我已阅读并同意<a href="https://r2.dowdah.com/Dowdah_ToS.txt"
+                                                                          target="_blank">《服务条款》</a></a-checkbox>
+      </a-form-item>
       <a-flex justify="center" align="center" v-if="open && formState.loginMethod !== 'passkey'">
         <Turnstile ref="turnstile" v-model:cf-token="token" action="login"/>
       </a-flex>
-      <a-form-item v-if="formState.loginMethod === 'passkey'">
-        <p>您已选择使用通行密钥登录，直接点击“登录”按钮即可。注意，您必须已经注册 WebAuthn 才能够使用其登录。</p>
-      </a-form-item>
-
       <a-form-item v-if="failedResponseData.code === 401">
         <!--        <RouterLink to="/reset-pwd" style="float: right">忘记密码？</RouterLink>-->
         <a href="#" style="float: right">忘记密码？</a>
@@ -102,7 +104,8 @@ export default {
         username: '',
         password: '',
         email: '',
-        loginMethod: 'username'
+        loginMethod: 'username',
+        agreeToS: false,
       },
       rules: {
         username: [
@@ -113,6 +116,9 @@ export default {
         ],
         password: [
           {validator: this.validatePassword, trigger: 'change'}
+        ],
+        agreeToS: [
+          {validator: this.validateAgreeToS, trigger: ['change', 'blur']}
         ]
       },
       passkeyDisabled: false,
@@ -189,6 +195,13 @@ export default {
         }
       } else {
         return Promise.resolve();
+      }
+    },
+    async validateAgreeToS(_rule, value) {
+      if (value) {
+        return Promise.resolve();
+      } else {
+        return Promise.reject('请阅读并同意服务条款');
       }
     },
     async handleWebAuthnLogin() {
@@ -296,6 +309,9 @@ export default {
       },
     },
     disabled() {
+      if (!this.formState.agreeToS) {
+        return true;
+      }
       switch (this.formState.loginMethod) {
         case 'username':
           return !USERNAME_REGEX.test(this.formState.username)

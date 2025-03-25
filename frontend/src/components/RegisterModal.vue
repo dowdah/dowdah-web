@@ -48,6 +48,10 @@
               </template>
             </a-input-password>
           </a-form-item>
+          <a-form-item name="agreeToS">
+            <a-checkbox v-model:checked="formState.agreeToS">我已阅读并同意<a href="https://r2.dowdah.com/Dowdah_ToS.txt"
+                                                        target="_blank">《服务条款》</a></a-checkbox>
+          </a-form-item>
         </a-form>
       </div>
       <div class="step-2" v-if="currentStep === 1">
@@ -76,7 +80,7 @@
           <caret-left-outlined/>
         </a-button>
         <a-button v-if="currentStep < steps.length - 1" type="primary" @click="nextStep" shape="circle"
-                  :loading="nextStepLoading">
+                  :disabled="nextStepDisabled">
           <caret-right-outlined/>
         </a-button>
         <a-button
@@ -129,6 +133,7 @@ export default {
         username: '',
         email: '',
         password: '',
+        agreeToS: false
       },
       rules: {
         username: [
@@ -139,6 +144,9 @@ export default {
         ],
         password: [
           {validator: this.validatePassword, trigger: 'blur'}
+        ],
+        agreeToS: [
+          {validator: this.validateAgreeToS, trigger: ['change', 'blur']}
         ]
       },
       cfToken: '',
@@ -159,7 +167,7 @@ export default {
         }
       ],
       currentStep: 0,
-      nextStepLoading: false,
+      nextStepDisabled: false,
       sendCodeLoading: false,
       emailCode: '',
       sendCodeCooldown: 0,
@@ -167,7 +175,7 @@ export default {
       taskId: '',
       pollCount: 0,
       pollInterval: null,
-      codeStatus: '',
+      codeStatus: ''
     };
   },
   methods: {
@@ -218,6 +226,13 @@ export default {
         return Promise.reject('密码至少包含一个大写字母、一个小写字母、一个数字和一个特殊字符，长度至少为8个字符');
       } else {
         return Promise.resolve();
+      }
+    },
+    async validateAgreeToS(_rule, value) {
+      if (value) {
+        return Promise.resolve();
+      } else {
+        return Promise.reject('请阅读并同意服务条款');
       }
     },
     async verifyTurnstile(cfToken) {
@@ -277,17 +292,23 @@ export default {
     },
     async nextStep() {
       if (this.currentStep === 0) {
-        this.nextStepLoading = true;
-        this.$refs.registerForm.validate().then(() => {
+        if (!this.formState.agreeToS) {
+          this.$message.error('请阅读并同意服务条款');
+          return;
+        }
+        this.nextStepDisabled = true;
+        try {
+          await this.$refs.registerForm.validate();
           this.currentStep++;
-        }).catch(() => {
+        } catch (e) {
           this.$message.error('请检查输入信息是否正确');
-        });
-        this.nextStepLoading = false;
+        } finally {
+          this.nextStepDisabled = false;
+        }
       } else if (this.currentStep === 1) {
         if (this.turnstileVerified) {
           if (this.validateCode()) {
-            this.nextStepLoading = true;
+            this.nextStepDisabled = true;
             const responseData = await this.register(this.payload);
             if (responseData.success) {
               this.currentStep++;
@@ -300,7 +321,7 @@ export default {
               this.$message.error(responseData.msg);
               this.resetTurnstile();
             }
-            this.nextStepLoading = false;
+            this.nextStepDisabled = false;
           } else {
             this.$message.error('请输入6位数字验证码');
           }
