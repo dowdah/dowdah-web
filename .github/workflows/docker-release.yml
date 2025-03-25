@@ -49,9 +49,9 @@ jobs:
       - name: Build Docker Image
         run: |
           docker buildx create --use
-          docker buildx build --platform linux/arm64 --tag dowdah-web-backend:${{ env.TAG }} -f Dockerfile.prod .
-          docker buildx build --platform linux/arm64 --tag dowdah-web-frontend:${{ env.TAG }} -f Dockerfile.prod .
-          docker buildx build --platform linux/arm64 --tag dowdah-web-nginx:${{ env.TAG }} -f Dockerfile.prod .
+          docker buildx build --platform linux/arm64 --tag dowdah-web-backend:${{ env.TAG }} -f backend/Dockerfile.prod .
+          docker buildx build --platform linux/arm64 --tag dowdah-web-frontend:${{ env.TAG }} -f frontend/Dockerfile.prod .
+          docker buildx build --platform linux/arm64 --tag dowdah-web-nginx:${{ env.TAG }} -f nginx/Dockerfile .
           docker images
 
       - name: Save Docker Image
