@@ -13,9 +13,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Generate Release Tag
         id: set_tag
         run: |
@@ -45,8 +42,7 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          docker buildx create --use
-          docker compose --env-file .env -f docker-compose.prod.yml build --platform linux/arm64
+          docker compose --env-file .env -f docker-compose.prod.yml build
           docker images
 
       - name: Save Docker Image
@@ -60,7 +56,7 @@ jobs:
         with:
           tag_name: ${{ env.TAG }}
           name: "Release ${{ env.TAG }}"
-          body: "Automated Docker aarch64 image build from main branch."
+          body: "Automated Docker image build from main branch."
           draft: false
           prerelease: false
           files: |
