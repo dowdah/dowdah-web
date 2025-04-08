@@ -45,20 +45,20 @@ class Config:
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    MAIL_SENDER = f"{Config.SITE_NAME.lower()}-push-service-dev<{Config.MAIL_ACCOUNT}>"
+    MAIL_SENDER = f"{Config.SITE_NAME.lower()}-dev<{Config.MAIL_ACCOUNT}>"
     USE_SSL = False
     DOMAIN = 'localhost'
 
 
 class TestingConfig(Config):
     TESTING = True
-    MAIL_SENDER = f"{Config.SITE_NAME.lower()}-push-service-test<{Config.MAIL_ACCOUNT}>"
+    MAIL_SENDER = f"{Config.SITE_NAME.lower()}-test<{Config.MAIL_ACCOUNT}>"
     USE_SSL = False
     DOMAIN = 'localhost'
 
 
 class ProductionConfig(Config):
-    MAIL_SENDER = f"{Config.SITE_NAME.lower()}-push-service<{Config.MAIL_ACCOUNT}>"
+    MAIL_SENDER = f"{Config.SITE_NAME.lower()}<{Config.MAIL_ACCOUNT}>"
     USE_SSL = True
     DOMAIN = 'www.dowdah.com'
 
