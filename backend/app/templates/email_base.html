@@ -8,7 +8,7 @@
   <body style="margin: 0; padding: 0; font-family: 'Microsoft Yahei', Tahoma, Arial; color: #333333; background-color: #ffffff;">
     <div id="main" style="width: 500px; margin: 20px auto; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); border-radius: 8px; overflow: hidden;">
       <div id="header" style="background-color: #ff7f00; padding: 20px; text-align: center;">
-        <p style="margin: 0; font-size: 24px; color: white;">{{ site_name }}</p>
+        <p style="margin: 0; font-size: 24px; color: white;"><a style="text-decoration: none; color: inherit;" href="http://{{ domain }}" target="_blank">{{ site_name }}</a></p>
       </div>
       <div id="content" style="padding: 20px;">
         {% block content %}
@@ -17,7 +17,7 @@
       <div id="foot" style="background-color: #f9f9f9; padding: 10px; text-align: center; border-top: 1px solid #eaeaea;">
         <hr style="border: none; border-top: 1px solid #eaeaea; margin: 10px 0;">
         <p style="margin: 0; font-size: 14px; color: #888888;">这篇邮件为系统自动发送，请不要回复这封邮件。</p>
-        <p style="margin: 0; font-size: 14px; color: #888888;">&copy; {{ current_year }} {{ site_name }}</p>
+        <p style="margin: 0; font-size: 14px; color: #888888;">Copyright &copy; 2025 - {{ current_year }} dowdah.com All Rights Reserved. {{ site_name }} 版权所有 </p>
       </div>
     </div>
   </body>
