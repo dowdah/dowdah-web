@@ -19,8 +19,17 @@
         <router-view></router-view>
       </a-layout-content>
       <a-layout-footer style="text-align: center">
-        {{ title }} ©{{ currentYear }} Created by 练习时长两年半的个人练习生 测试版本不代表最终品质<br><br>
-        <p>浏览和使用本网站提供的服务，视为您理解并同意
+        <p>Copyright © 2025 - {{ currentYear }} dowdah.com All Rights Reserved. {{ siteName }} 版权所有 </p>
+        <a-flex justify="center" align="middle" gap="small">
+<!--          <p>-->
+<!--            <img src="https://img.alicdn.com/tfs/TB1..50QpXXXXX7XpXXXXXXXXXX-40-40.png" width="20"/>-->
+<!--            <a href="https://beian.mps.gov.cn/#/query/webSearch?code=61011302114514" rel="noreferrer" target="_blank">苏公网安备61011302114514号</a>-->
+<!--          </p>-->
+          <p>
+            ICP证：<a href="https://beian.miit.gov.cn/" target="_blank">{{ icpFilingNumber }}</a>
+          </p>
+        </a-flex>
+        <p>使用本网站提供的服务，视为您已阅读并同意
           <a href="https://r2.dowdah.com/Dowdah_ToS.txt" target="_blank">《服务条款》</a>。</p>
       </a-layout-footer>
     </a-layout>
@@ -35,6 +44,7 @@
 import { theme } from 'ant-design-vue';
 import { mapGetters, mapState } from 'vuex';
 import { h } from 'vue';
+import { ICP_FILING_NUMBER, SITE_NAME } from "./config/constants";
 import NavBar from "./components/NavBar.vue";
 import TopBar from "./components/TopBar.vue";
 import LoginModal from "./components/LoginModal.vue";
@@ -59,7 +69,9 @@ export default {
       loadingIndicator: h('img', {
         src: 'https://r2.dowdah.com/loading_0d00.png', // 你的图片路径
         class: 'loading-spin-img'
-      })
+      }),
+      icpFilingNumber: ICP_FILING_NUMBER,
+      siteName: SITE_NAME,
     };
   },
   computed: {
