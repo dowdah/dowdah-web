@@ -21,12 +21,12 @@
       <a-layout-footer style="text-align: center">
         <p>Copyright © 2025 - {{ currentYear }} dowdah.com All Rights Reserved. {{ siteName }} 版权所有 </p>
         <a-flex justify="center" align="middle" gap="small">
-<!--          <p>-->
-<!--            <img src="https://img.alicdn.com/tfs/TB1..50QpXXXXX7XpXXXXXXXXXX-40-40.png" width="20"/>-->
-<!--            <a href="https://beian.mps.gov.cn/#/query/webSearch?code=61011302114514" rel="noreferrer" target="_blank">苏公网安备61011302114514号</a>-->
-<!--          </p>-->
           <p>
             ICP证：<a href="https://beian.miit.gov.cn/" target="_blank">{{ icpFilingNumber }}</a>
+          </p>
+          <p>
+            <img src="https://r2.dowdah.com/filing_icon.png" style="display: inline;margin: 0 5px;width: 16px;"/>
+            <a href="https://beian.mps.gov.cn/#/query/webSearch?code=32011302322794" rel="noreferrer" target="_blank">苏公网安备32011302322794号</a>
           </p>
         </a-flex>
         <p>使用本网站提供的服务，视为您已阅读并同意
