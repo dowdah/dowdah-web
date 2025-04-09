@@ -22,7 +22,7 @@
         <p>Copyright © 2025 - {{ currentYear }} dowdah.com All Rights Reserved. {{ siteName }} 版权所有 </p>
         <a-flex justify="center" align="middle" gap="small">
           <p>
-            ICP证：<a href="https://beian.miit.gov.cn/" target="_blank">{{ icpFilingNumber }}</a>
+            <a href="https://beian.miit.gov.cn/" target="_blank">{{ icpFilingNumber }}</a>
           </p>
           <p>
             <img src="https://r2.dowdah.com/filing_icon.png" style="display: inline;margin: 0 5px;width: 16px;"/>
