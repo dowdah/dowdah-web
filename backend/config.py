@@ -38,6 +38,10 @@ class Config:
     R2_PUBLIC_URL = f'https://r2.dowdah.com'
     R2_PROXY = 'https://r2-proxy.dowdah.com' # 接受用户请求的 Cloudflare Worker 代理
 
+    WECHAT_TOKEN = os.environ.get('WECHAT_TOKEN')
+    WECHAT_AES_KEY = os.environ.get('WECHAT_AES_KEY')
+    WECHAT_APP_ID = os.environ.get('WECHAT_APP_ID')
+
     @staticmethod
     def init_app(app):
         pass
