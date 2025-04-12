@@ -26,7 +26,7 @@
           </p>
           <p>
             <img src="https://r2.dowdah.com/filing_icon.png" style="display: inline;margin: 0 5px;width: 16px;"/>
-            <a href="https://beian.mps.gov.cn/#/query/webSearch?code=32011302322794" rel="noreferrer" target="_blank">苏公网安备32011302322794号</a>
+            <a href="https://beian.mps.gov.cn/#/query/webSearch?code=32011302322794" rel="noreferrer" target="_blank">{{ psFilingNumber }}</a>
           </p>
         </a-flex>
         <p>使用本网站提供的服务，视为您已阅读并同意
@@ -44,7 +44,7 @@
 import { theme } from 'ant-design-vue';
 import { mapGetters, mapState } from 'vuex';
 import { h } from 'vue';
-import { ICP_FILING_NUMBER, SITE_NAME } from "./config/constants";
+import { ICP_FILING_NUMBER, SITE_NAME, PS_FILING_NUMBER } from "./config/constants";
 import NavBar from "./components/NavBar.vue";
 import TopBar from "./components/TopBar.vue";
 import LoginModal from "./components/LoginModal.vue";
@@ -72,6 +72,7 @@ export default {
       }),
       icpFilingNumber: ICP_FILING_NUMBER,
       siteName: SITE_NAME,
+      psFilingNumber: PS_FILING_NUMBER
     };
   },
   computed: {
