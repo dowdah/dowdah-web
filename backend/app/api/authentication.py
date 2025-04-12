@@ -7,7 +7,8 @@ from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 
 BYPASS_AUTH = ['api.v1.auth.login', 'api.v1.auth.register', 'api.v1.webauthn.webauthn_login_begin',
                'api.v1.webauthn.webauthn_login_complete', 'api.v1.auth.send_email_code',
-               'api.v1.auth.verify_email_code', 'api.v1.get_task', 'api.v1.user.exists']
+               'api.v1.auth.verify_email_code', 'api.v1.get_task', 'api.v1.user.exists', 'api.v1.wx.view',
+               'api.v1.wx.check_bind_request']
 ALLOW_REFRESH_TOKEN = ['api.v1.auth.refresh_access_token']
 
 
@@ -28,20 +29,21 @@ def before_request():
                 g.is_anonymous = False
                 g.token_type = token_type
         except (IndexError, ExpiredSignatureError, InvalidTokenError) as e:
-            if str(e) == 'Signature has expired':
-                response_json = {
-                    'success': False,
-                    'code': 401,
-                    'msg': 'Token has expired'
-                }
-                return jsonify(response_json), 401
-            else:
-                response_json = {
-                    'success': False,
-                    'code': 401,
-                    'msg': 'Invalid token'
-                }
-                return jsonify(response_json), 401
+            if request.endpoint not in BYPASS_AUTH:
+                if str(e) == 'Signature has expired':
+                    response_json = {
+                        'success': False,
+                        'code': 401,
+                        'msg': 'Token has expired'
+                    }
+                    return jsonify(response_json), 401
+                else:
+                    response_json = {
+                        'success': False,
+                        'code': 401,
+                        'msg': 'Invalid token'
+                    }
+                    return jsonify(response_json), 401
     if request.endpoint not in BYPASS_AUTH:
         if g.is_anonymous:
             abort(401)
