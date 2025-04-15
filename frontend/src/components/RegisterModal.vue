@@ -55,7 +55,30 @@
         </a-form>
       </div>
       <div class="step-2" v-if="currentStep === 1">
-        <p>确认您的邮箱为：{{ formState.email }}</p>
+        <a-flex justify="center" align="center">
+          <a-image
+              :width="200"
+              src="https://r2.dowdah.com/wechat_service_qr_code_min.png"
+              :preview="{src: 'https://r2.dowdah.com/wechat_service_qr_code.png',
+                title: '扫码关注服务号'}"/>
+        </a-flex>
+        <p style="margin: 10px 0 0 0;">关注微信服务号后，发送以下信息提交您的微信绑定申请：</p>
+        <a-typography-paragraph copyable style="margin-bottom: 0; font-weight: bold; text-decoration: underline">
+          /绑定 {{ formState.email }}
+        </a-typography-paragraph>
+        <p style="margin-bottom: 0;">提交绑定申请后，需要等待绑定状态更新，等待时间通常是5秒。</p>
+        <a-flex justify="space-between" align="center" style="margin-bottom: 10px;">
+          <p>当前绑定状态: {{ wechatBindExists ? '已提交绑定申请' : '未提交绑定申请' }}</p>
+          <a-button v-if="showManualBind" size="small" @click="handleCheckWechat" :disabled="wechatCooldown > 0">
+            {{ wechatCooldown > 0 ? wechatCooldown + '秒后可重试' : '刷新绑定状态' }}
+            <template #icon>
+              <ReloadOutlined/>
+            </template>
+          </a-button>
+        </a-flex>
+      </div>
+      <div class="step-3" v-if="currentStep === 2">
+        <p>验证您的邮箱为：{{ formState.email }}</p>
         <a-flex justify="space-around" align="center">
           <Turnstile ref="turnstile" v-model:cf-token="cfToken" action="send_email_code_and_register"/>
           <a-button type="primary" @click="sendEmailCode" :loading="sendCodeLoading || sendCodeCooldown > 0"
@@ -72,15 +95,15 @@
         </a-input>
         <p :style="{color: 'red', 'margin-bottom': '20px', opacity: codeStatus === '' ? '0':'1'}">请输入6位数字验证码</p>
       </div>
-      <div class="step-3" v-if="currentStep === 2">
+      <div class="step-4" v-if="currentStep === 3">
         <p>注册成功！</p>
       </div>
       <a-flex justify="space-around" align="center">
-        <a-button v-if="currentStep === 1" @click="previousStep" shape="circle">
+        <a-button v-if="currentStep < steps.length - 1 && currentStep > 0 " @click="previousStep" shape="circle">
           <caret-left-outlined/>
         </a-button>
         <a-button v-if="currentStep < steps.length - 1" type="primary" @click="nextStep" shape="circle"
-                  :disabled="nextStepDisabled">
+                  :disabled="nextStepDisabled || (currentStep === 1 && !wechatBindExists)">
           <caret-right-outlined/>
         </a-button>
         <a-button
@@ -100,7 +123,7 @@
 import {
   UserOutlined, LockOutlined, MailOutlined, QuestionCircleOutlined, SendOutlined,
   SolutionOutlined, FileDoneOutlined, CaretRightOutlined, CaretLeftOutlined,
-  CheckOutlined, SecurityScanOutlined
+  CheckOutlined, SecurityScanOutlined, WechatOutlined, ReloadOutlined
 } from '@ant-design/icons-vue';
 import {mapActions, mapGetters, mapState} from 'vuex';
 import {TURNSTILE_VERIFY_URL, EMAIL_REGEX, USERNAME_REGEX, PASSWORD_REGEX} from "../config/constants";
@@ -125,6 +148,8 @@ export default {
     CaretLeftOutlined,
     CheckOutlined,
     SecurityScanOutlined,
+    WechatOutlined,
+    ReloadOutlined,
     Turnstile
   },
   data() {
@@ -158,6 +183,10 @@ export default {
           icon: h(SolutionOutlined)
         },
         {
+          title: '绑定微信',
+          icon: h(WechatOutlined)
+        },
+        {
           title: '验证邮箱',
           icon: h(SendOutlined)
         },
@@ -173,9 +202,19 @@ export default {
       sendCodeCooldown: 0,
       sendCodeTimer: null,
       taskId: '',
-      pollCount: 0,
-      pollInterval: null,
-      codeStatus: ''
+      emailPoll: {
+        count: 0,
+        interval: null
+      },
+      wechatPoll: {
+        bindEmail: '',
+        count: 0,
+        interval: null
+      },
+      wechatCooldown: 0,
+      wechatTimer: null,
+      codeStatus: '',
+      showManualBind: false,
     };
   },
   methods: {
@@ -306,6 +345,8 @@ export default {
           this.nextStepDisabled = false;
         }
       } else if (this.currentStep === 1) {
+        this.currentStep++;
+      } else if (this.currentStep === 2) {
         if (this.turnstileVerified) {
           if (this.validateCode()) {
             this.nextStepDisabled = true;
@@ -347,9 +388,9 @@ export default {
           return;
         }
         if (response.data.success) {
-          this.startCooldown();
+          this.startSendCodeCooldown();
           this.taskId = response.data.task_id;
-          this.startPolling();
+          this.startEmailPolling();
         } else {
           this.$message.error(response.data.msg);
         }
@@ -362,7 +403,8 @@ export default {
     previousStep() {
       this.currentStep--;
     },
-    startCooldown() {
+    startSendCodeCooldown() {
+      // 开始发送码冷却
       this.sendCodeCooldown = 60;
       this.timer = setInterval(() => {
         this.sendCodeCooldown--;
@@ -373,6 +415,7 @@ export default {
       }, 1000);
     },
     async checkTaskStatus() {
+      // 检查邮件发送状态
       if (!this.taskId) return
       let response;
       try {
@@ -391,24 +434,96 @@ export default {
             this.timer = null;
             this.sendCodeCooldown = 0;
           }
-          this.stopPolling();
+          this.stopEmailPolling();
         }
       }
-      this.pollCount++;
+      this.emailPoll.count++;
       // 最大轮询次数为4次
-      if (this.pollCount >= 4) {
+      if (this.emailPoll.count >= 4) {
         this.$message.error('未取得验证码发送结果，请自行检查您是否收到验证码邮件。');
-        this.stopPolling();
+        this.stopEmailPolling();
       }
     },
-    startPolling() {
-      this.pollInterval = setInterval(this.checkTaskStatus, 1750);
+    startEmailPolling() {
+      // 开始邮件发送状态轮询
+      this.emailPoll.interval = setInterval(this.checkTaskStatus, 1750);
     },
-    stopPolling() {
-      clearInterval(this.pollInterval);
-      this.pollInterval = null;
-      this.pollCount = 0;
+    stopEmailPolling() {
+      // 停止邮件发送状态轮询
+      clearInterval(this.emailPoll.interval);
+      this.emailPoll.interval = null;
+      this.emailPoll.count = 0;
       this.taskId = '';
+    },
+    async checkWechatBind(){
+      // 检查微信绑定状态
+      let response;
+      try {
+        response = await apiClient.get(`/wx/check-bind-request?email=${this.formState.email}`);
+      } catch (error) {
+        console.error('Check Wechat bind status error:', error);
+        return;
+      }
+      if (response.data.success) {
+        if (response.data.exists) {
+          this.wechatPoll.bindEmail = this.formState.email;
+          this.stopWechatPolling();
+          this.$message.success('微信绑定成功！');
+        }
+      }
+      this.wechatPoll.count++;
+      // 最大轮询次数为10次
+      if (this.wechatPoll.count >= 10) {
+        this.$message.error('未能自动取得微信绑定结果，请您发送绑定消息后手动查询。');
+        this.stopWechatPolling();
+        this.showManualBind = true;
+      }
+    },
+    startWechatPolling() {
+      // 开始微信绑定状态轮询
+      this.wechatPoll.interval = setInterval(this.checkWechatBind, 5000);
+    },
+    stopWechatPolling() {
+      // 停止微信绑定状态轮询
+      clearInterval(this.wechatPoll.interval);
+      this.wechatPoll.interval = null;
+      this.wechatPoll.count = 0;
+    },
+    startWechatCooldown() {
+      // 开始微信冷却
+      this.wechatCooldown = 5;
+      this.wechatTimer = setInterval(() => {
+        this.wechatCooldown--;
+        if (this.wechatCooldown <= 0) {
+          clearInterval(this.wechatTimer);
+          this.wechatTimer = null;
+        }
+      }, 1000);
+    },
+    async handleCheckWechat() {
+      // 检查微信绑定状态
+      if (this.wechatCooldown > 0) return;
+      this.startWechatCooldown();
+      let response;
+      try {
+        response = await apiClient.get(`/wx/check-bind-request?email=${this.formState.email}`);
+      } catch (error) {
+        console.error('Check Wechat bind status error:', error);
+        return;
+      }
+      if (response.data.success) {
+        if (response.data.exists) {
+          this.wechatPoll.bindEmail = this.formState.email;
+          if (this.wechatPoll.interval) {
+            this.stopWechatPolling();
+          }
+          this.$message.success('微信绑定成功！');
+        } else {
+          this.$message.error('暂未收到您的微信绑定请求。');
+        }
+      } else {
+        this.$message.error('检查微信绑定状态失败，请稍后重试。');
+      }
     }
   },
   computed: {
@@ -431,6 +546,9 @@ export default {
         turnstile: this.turnstileVerifyResponse,
         fingerprint: this.fingerprint
       }
+    },
+    wechatBindExists() {
+      return this.formState.email === this.wechatPoll.bindEmail;
     }
   },
   watch: {
@@ -450,6 +568,19 @@ export default {
           password: ''
         }
         this.emailCode = '';
+      } else {
+        if (this.wechatPoll.interval) {
+          this.stopWechatPolling();
+        }
+      }
+      this.showManualBind = false;
+    },
+    currentStep(val) {
+      if (val === 1) {
+        if (this.wechatPoll.interval === null && !this.wechatBindExists) {
+          this.showManualBind = false;
+          this.startWechatPolling();
+        }
       }
     }
   }
