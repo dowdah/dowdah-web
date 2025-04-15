@@ -16,7 +16,8 @@
         @show-login-modal="showLoginModal = true" @show-register-modal="showRegisterModal = true" />
       </a-layout-header>
       <a-layout-content :style="{ margin: '24px 16px 0', overflow: 'initial' }">
-        <router-view></router-view>
+        <NotWechatBound v-if="notWechatBound" />
+        <router-view v-else></router-view>
       </a-layout-content>
       <a-layout-footer style="text-align: center">
         <p>Copyright © 2025 - {{ currentYear }} dowdah.com All Rights Reserved. {{ siteName }} 版权所有 </p>
@@ -50,6 +51,7 @@ import TopBar from "./components/TopBar.vue";
 import LoginModal from "./components/LoginModal.vue";
 import RegisterModal from "./components/RegisterModal.vue";
 import Fingerprint from "./components/Fingerprint.vue";
+import NotWechatBound from "./views/NotWechatBound.vue";
 import dayjs from 'dayjs';
 
 export default {
@@ -59,7 +61,8 @@ export default {
     NavBar,
     LoginModal,
     Fingerprint,
-    RegisterModal
+    RegisterModal,
+    NotWechatBound
   },
   data() {
     return {
@@ -88,6 +91,9 @@ export default {
     },
     currentYear() {
       return dayjs().format('YYYY');
+    },
+    notWechatBound() {
+      return this.isAuthenticated && !this.user.wechat_bound;
     }
   }
 };
