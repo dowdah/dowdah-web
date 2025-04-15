@@ -60,39 +60,22 @@ def view():
         if decrypted_msg.msg_type == 'text':
             # 处理文本消息
             if decrypted_msg.is_command:
-                if decrypted_msg.command == '帮助':
-                    send_content = "命令列表：\n" \
-                                   "/帮助 - 显示本帮助信息\n" \
-                                   "/回显 <内容> - 回显内容\n" \
-                                   "/绑定 <邮箱> - 新用户注册绑定邮箱\n"
-                elif decrypted_msg.command == '回显':
-                    if decrypted_msg.args:
-                        send_content = f"你说的内容是：{decrypted_msg.args[0]}"
-                    else:
-                        send_content = "请提供要回显的内容！"
-                elif decrypted_msg.command == '绑定':
-                    email = decrypted_msg.args[0] if decrypted_msg.args else None
-                    if email and EMAIL_REGEX.match(email):
-                        if User.query.filter_by(email=email).first():
-                            send_content = "该邮箱已被绑定！"
-                        else:
-                            redis_client.set(f"bind_{email}", decrypted_msg.from_user_name, ex=600)
-                            send_content = (f"您已申请将 {email} 绑定到您的微信账号，"
-                                            f"请在 10 分钟内完成注册。若超时请重新发送绑定命令。\n"
-                                            f"注意：若您未在期限内完成注册，本次申请将失效。")
-                    else:
-                        send_content = "请提供有效的邮箱地址！"
-                else:
-                    send_content = f"未知命令：{decrypted_msg.command}，请使用 /help 查看帮助信息！"
+                send_content = handle_command(decrypted_msg.from_user_name, decrypted_msg.command, decrypted_msg.args)
                 # send_content = f"你正在执行命令：{decrypted_msg.command}, 参数：{str(decrypted_msg.args)}"
                 raw_send_msg = sTextMsg(decrypted_msg, content=send_content).send()
             else:
-                raw_send_msg = sTextMsg(decrypted_msg, content=f"你说得对：{decrypted_msg.content}").send()
+                raw_send_msg = sTextMsg(decrypted_msg, content=f"收到您的内容：{decrypted_msg.content}").send()
+        elif decrypted_msg.msg_type == 'event':
+            if decrypted_msg.event == 'subscribe':
+                raw_send_msg = sTextMsg(decrypted_msg, content='欢迎关注，发送“/帮助”了解如何使用本服务号。').send()
+            elif decrypted_msg.event == 'unsubscribe':
+                return 'success'
+            else:
+                raw_send_msg = sTextMsg(decrypted_msg, content='现在不支持这种类型的消息！').send()
         else:
             raw_send_msg = sTextMsg(decrypted_msg, content='现在不支持这种类型的消息！').send()
         encrypted_send_msg = wx_crypt.encrypt_msg(raw_send_msg, nonce=nonce)
         return encrypted_send_msg
-    return 'success'
 
 
 @wx_bp.route('/check-bind-request')
@@ -127,6 +110,51 @@ def parse_xml(web_data):
         return rImageMsg(xml_data)
     elif msg_type == 'event':
         return rEventMsg(xml_data)
+
+
+def handle_command(from_user_name, command, args):
+    if command == '帮助':
+        return "命令列表：\n" \
+               "/帮助 - 显示本帮助信息\n" \
+               "/回显 <内容> - 回显内容\n" \
+               "/绑定 <邮箱> - 绑定邮箱。注意：使用本命令后，要使用对应的账户在官网确认绑定才能生效。\n" \
+               "/我 - 显示账户信息\n"
+    elif command == '回显':
+        if args:
+            return f"你说的内容是：{args[0]}"
+        else:
+            return "请提供要回显的内容！"
+    elif command == '绑定':
+        if args:
+            email = args[0]
+            if EMAIL_REGEX.match(email):
+                email_user = User.query.filter_by(email=email).first()
+                me = User.query.filter_by(wechat_openid=from_user_name).first()
+                if email_user and email_user.wechat_bound:
+                    return "该邮箱已被绑定！"
+                elif me:
+                    return f"你已绑定账户：{me.username}(UID:{me.id})。"
+                else:
+                    redis_client.set(f"bind_{email}", from_user_name, ex=600)
+                    return (f"您已申请将 {email} 绑定到您的微信账号，"
+                            f"请在 10 分钟内于官网完成确认操作。若超时请重新发送绑定命令。\n"
+                            f"注意：若您未在期限内未于官网确认绑定，本次申请将不会作出任何改变。")
+            else:
+                return "请提供有效的邮箱地址！"
+        else:
+            return "请提供要绑定的邮箱地址！"
+    elif command == '我':
+        user = User.query.filter_by(wechat_openid=from_user_name).first()
+        if user:
+            return f"你的Dowdah账户信息\n" \
+                   f"UID：{user.id}\n" \
+                   f"用户名：{user.username}\n" \
+                   f"邮箱：{user.email}\n" \
+                   f"注册时间：{user.formatted_created_at}\n"
+        else:
+            return "你尚未绑定Dowdah账户。请前往官网创建账户或绑定已有账户。"
+    else:
+        return f"未知命令：{command}，请发送“/帮助”查看帮助信息！"
 
 
 class rMsg:
