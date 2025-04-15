@@ -133,7 +133,7 @@ def handle_command(from_user_name, command, args):
                 if email_user and email_user.wechat_bound:
                     return "该邮箱已被绑定！"
                 elif me:
-                    return f"你已绑定账户：{me.username}(UID:{me.id})。"
+                    return f"你已绑定账户: {me.username}(UID: {me.id})，无法重复绑定。"
                 else:
                     redis_client.set(f"bind_{email}", from_user_name, ex=600)
                     return (f"您已申请将 {email} 绑定到您的微信账号，"
