@@ -42,8 +42,17 @@ def register():
             'code': 400,
             'msg': 'User already exists'
         }
+        return jsonify(response_json), response_json['code']
+    wechat_openid = redis_client.get(f"bind_{email}")
+    if wechat_openid is None:
+        response_json = {
+            'success': False,
+            'code': 400,
+            'msg': 'Wechat bind request not found'
+        }
+        return jsonify(response_json), response_json['code']
     else:
-        new_user = User(username=username, email=email, password=password)
+        new_user = User(username=username, email=email, password=password, wechat_openid=wechat_openid)
         db.session.add(new_user)
         db.session.commit()
         response_json = {
@@ -188,6 +197,47 @@ def verify_email_code():
                 'code': 400,
                 'msg': 'Invalid email address'
             }
+    return jsonify(response_json), response_json['code']
+
+
+@auth_bp.route('/bind-wechat')
+def bind_wechat():
+    user = g.current_user
+    if user.wechat_bound:
+        response_json = {
+            'success': False,
+            'code': 400,
+            'msg': 'Wechat already bound'
+        }
+    else:
+        wechat_openid = redis_client.get(f"bind_{user.email}")
+        if wechat_openid is None:
+            response_json = {
+                'success': True,
+                'code': 200,
+                'msg': 'Wechat bind request not found',
+                'wechat_bound': False
+            }
+        else:
+            user.wechat_openid = wechat_openid
+            try:
+                db.session.add(user)
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                response_json = {
+                    'success': False,
+                    'code': 400,
+                    'msg': 'Failed to bind Wechat. Probably due to duplicate Wechat ID.'
+                }
+            else:
+                redis_client.delete(f"bind_{user.email}")
+                response_json = {
+                    'success': True,
+                    'code': 200,
+                    'msg': 'Wechat bound successfully',
+                    'wechat_bound': True
+                }
     return jsonify(response_json), response_json['code']
 
 
