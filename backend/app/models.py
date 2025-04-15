@@ -3,7 +3,7 @@ import uuid
 
 from flask import current_app
 from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 from sqlalchemy.dialects.mysql import BLOB
 from flask_jwt_extended import create_access_token, create_refresh_token
 from itsdangerous.url_safe import URLSafeTimedSerializer as Serializer
@@ -103,6 +103,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     alternative_id = db.Column(db.String(32), unique=True, index=True)  # 用户的替代ID，用于生成token，初始化时自动生成
     r2_uuid = db.Column(db.String(32), unique=True, index=True)  # 用户的R2 UUID，初始化时自动生成
+    wechat_openid = db.Column(db.String(32), unique=True, index=True, nullable=True)  # 微信openid
     avatar_filename = db.Column(db.String(32), nullable=True, default=None)  # 用户头像文件名
     username = db.Column(db.String(64), unique=True, index=True, nullable=False)  # 用户名
     email = db.Column(db.String(64), unique=True, index=True, nullable=False)  # 邮箱，用于二步验证
@@ -112,6 +113,7 @@ class User(db.Model):
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))  # 用户的身份
     comments = db.Column(db.Text, nullable=True, default='')  # 备注(管理员添加)
     webauthn_credentials = db.relationship('WebAuthnCredential', backref='user', lazy=True)
+    setting = db.relationship('UserSetting', backref='user', uselist=False, cascade="all, delete-orphan")
 
     def __repr__(self):
         return '<User %s>' % self.username
@@ -144,6 +146,15 @@ class User(db.Model):
                     f"{self.r2_uuid}/{self.avatar_filename}")
         else:
             return None
+
+    @hybrid_property
+    def wechat_bound(self):
+        return self.wechat_openid is not None or self.role_id != 1
+
+    # noinspection PyMethodParameters
+    @wechat_bound.expression
+    def wechat_bound(cls):
+        return (cls.wechat_openid.isnot(None)) | (cls.role_id != 1)
 
     def verify_password(self, password):
         return check_password_hash(self.password_hash, password)
@@ -230,13 +241,16 @@ class User(db.Model):
             'id': self.id,
             'email': self.email,
             'avatar_url': self.avatar_url,
-            'role': self.role.to_json()
+            'role': self.role.to_json(),
+            'wechat_bound': self.wechat_bound,
+            'settings': self.setting.to_json() if self.setting else None
         }
         if include_related:
             related_json = {}
             user_json.update(related_json)
         if include_sensitive:
             sensitive_json = {
+                'wechat_openid': self.wechat_openid,
                 'comments': self.comments,
             }
             user_json.update(sensitive_json)
@@ -266,4 +280,14 @@ class WebAuthnCredential(db.Model):
             'sign_count': self.sign_count,
             'disabled': self.disabled,
             'created_at': self.formatted_created_at
+        }
+
+
+class UserSetting(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+    def to_json(self):
+        return {
+            'id': self.id
         }
