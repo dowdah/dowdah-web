@@ -16,7 +16,8 @@
         @show-login-modal="showLoginModal = true" @show-register-modal="showRegisterModal = true" />
       </a-layout-header>
       <a-layout-content :style="{ margin: '24px 16px 0', overflow: 'initial' }">
-        <router-view></router-view>
+        <NotWechatBound v-if="notWechatBound" />
+        <router-view v-else></router-view>
       </a-layout-content>
       <a-layout-footer style="text-align: center">
         <p>Copyright © 2025 - {{ currentYear }} dowdah.com All Rights Reserved. {{ siteName }} 版权所有 </p>
@@ -26,7 +27,7 @@
           </p>
           <p>
             <img src="https://r2.dowdah.com/filing_icon.png" style="display: inline;margin: 0 5px;width: 16px;"/>
-            <a href="https://beian.mps.gov.cn/#/query/webSearch?code=32011302322794" rel="noreferrer" target="_blank">苏公网安备32011302322794号</a>
+            <a href="https://beian.mps.gov.cn/#/query/webSearch?code=32011302322794" rel="noreferrer" target="_blank">{{ psFilingNumber }}</a>
           </p>
         </a-flex>
         <p>使用本网站提供的服务，视为您已阅读并同意
@@ -44,12 +45,13 @@
 import { theme } from 'ant-design-vue';
 import { mapGetters, mapState } from 'vuex';
 import { h } from 'vue';
-import { ICP_FILING_NUMBER, SITE_NAME } from "./config/constants";
+import { ICP_FILING_NUMBER, SITE_NAME, PS_FILING_NUMBER } from "./config/constants";
 import NavBar from "./components/NavBar.vue";
 import TopBar from "./components/TopBar.vue";
 import LoginModal from "./components/LoginModal.vue";
 import RegisterModal from "./components/RegisterModal.vue";
 import Fingerprint from "./components/Fingerprint.vue";
+import NotWechatBound from "./views/NotWechatBound.vue";
 import dayjs from 'dayjs';
 
 export default {
@@ -59,7 +61,8 @@ export default {
     NavBar,
     LoginModal,
     Fingerprint,
-    RegisterModal
+    RegisterModal,
+    NotWechatBound
   },
   data() {
     return {
@@ -72,6 +75,7 @@ export default {
       }),
       icpFilingNumber: ICP_FILING_NUMBER,
       siteName: SITE_NAME,
+      psFilingNumber: PS_FILING_NUMBER
     };
   },
   computed: {
@@ -87,6 +91,9 @@ export default {
     },
     currentYear() {
       return dayjs().format('YYYY');
+    },
+    notWechatBound() {
+      return this.isAuthenticated && !this.user.wechat_bound;
     }
   }
 };

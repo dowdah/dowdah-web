@@ -1,6 +1,6 @@
 from sqlalchemy import event
 from sqlalchemy.orm import Session
-from .models import User, Role, WebAuthnCredential
+from .models import User, Role, WebAuthnCredential, UserSetting
 import datetime
 import uuid
 
@@ -14,8 +14,9 @@ def user_before_insert(mapper, connection, target):
 
 def user_before_flush(session, flush_context, instances):
     for instance in session.new:
-        if isinstance(instance, User) and instance.role is None:
-            instance.role = Role.query.filter_by(default=True).first()
+        if isinstance(instance, User):
+            if instance.role is None:
+                instance.role = Role.query.filter_by(default=True).first()
 
 
 def webauthn_before_insert(mapper, connection, target):
