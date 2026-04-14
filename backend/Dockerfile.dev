@@ -14,4 +14,4 @@ RUN pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --upgrade --no-cache
 RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 RUN pip install --force-reinstall --no-cache-dir -r requirements/dev.txt
 
-CMD ["bash", "-c", "flask run --host=0.0.0.0 --port=5000 --reload & celery -A wsgi.celery worker --loglevel=info --autoscale=10,2 && wait"]
+CMD ["bash", "-c", "flask run --host=0.0.0.0 --port=5000 --reload & FLASK_PID=$!; celery -A wsgi.celery worker --loglevel=info --autoscale=10,2 & CELERY_PID=$!; wait -n \"$FLASK_PID\" \"$CELERY_PID\"; EXIT_CODE=$?; kill \"$FLASK_PID\" \"$CELERY_PID\" 2>/dev/null || true; wait \"$FLASK_PID\" \"$CELERY_PID\" 2>/dev/null || true; exit \"$EXIT_CODE\""]
