@@ -5,7 +5,7 @@ WORKDIR /app
 COPY requirements/prod.txt ./requirements/
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends bash tzdata && \
+    DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install -y --no-install-recommends bash tzdata && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --upgrade --no-cache-dir pip
