@@ -4,8 +4,8 @@ WORKDIR /app
 
 COPY requirements/dev.txt ./requirements/
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
+RUN DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get update && \
+    DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install -y --no-install-recommends \
         tzdata \
         bash \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
