@@ -14,4 +14,4 @@ RUN pip install --force-reinstall --no-cache-dir -r requirements/prod.txt
 
 COPY . .
 
-CMD ["bash", "-c", "gunicorn -c gunicorn_config.py wsgi:app & celery -A wsgi.celery worker --loglevel=info --autoscale=9,2 && wait"]
+CMD ["bash", "-c", "gunicorn -c gunicorn_config.py wsgi:app & gunicorn_pid=$!; celery -A wsgi.celery worker --loglevel=info --autoscale=9,2 & celery_pid=$!; wait -n \"$gunicorn_pid\" \"$celery_pid\"; exit_code=$?; kill \"$gunicorn_pid\" \"$celery_pid\" 2>/dev/null || true; wait \"$gunicorn_pid\" \"$celery_pid\" 2>/dev/null || true; exit \"$exit_code\""]
